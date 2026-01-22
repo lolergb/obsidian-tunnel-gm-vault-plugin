@@ -2,11 +2,16 @@
 
 Obsidian plugin that exports your vault to a JSON file compatible with **[GM Vault](https://owlbear-gm-vault.netlify.app)** for [Owlbear Rodeo](https://www.owlbear.rodeo/).
 
-## ⚡ Quick Install
+## ⚡ Quick Install (For Non-Technical Users)
 
-**Easiest way:** Install [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat), then add this repo: `https://github.com/lolergb/obsidian-gm-vault-exporter`
+**Simple 3-step installation:**
 
-See [Installation](#-quick-start) section below for detailed instructions.
+1. **Download:** Click the green "Code" button above → "Download ZIP"
+2. **Extract:** Unzip the downloaded file
+3. **Copy:** Copy `main.js` and `manifest.json` to your vault's `.obsidian/plugins/gm-vault-exporter/` folder
+4. **Enable:** Open Obsidian → Settings → Community plugins → Enable "GM Vault Exporter"
+
+> 💡 **Don't know where your vault folder is?** Open Obsidian → Settings → Files & Links → "Vault location"
 
 ## 🎯 What is this?
 
@@ -26,26 +31,52 @@ This plugin is a companion tool for **GM Vault**, an Owlbear Rodeo extension tha
 
 ### 1. Installation
 
-Choose one of the following installation methods:
+#### Method 1: Download ZIP (Simplest - No technical knowledge needed)
 
-#### Option A: Using BRAT (Recommended - Easiest)
+**Step-by-step for beginners:**
+
+1. **Download the plugin:**
+   - Click the green **"Code"** button at the top of this page
+   - Click **"Download ZIP"**
+   - Save the file anywhere (Desktop is fine)
+
+2. **Extract the ZIP file:**
+   - Double-click the downloaded ZIP file to extract it
+   - You'll see a folder named `obsidian-gm-vault-exporter-main`
+
+3. **Find your Obsidian vault folder:**
+   - Open Obsidian
+   - Go to **Settings** (⚙️) → **Files & Links**
+   - Look for **"Vault location"** and copy that path
+   - Or just remember where your notes are stored
+
+4. **Copy the plugin files:**
+   - Open your vault folder in Finder (Mac) or File Explorer (Windows)
+   - Navigate to `.obsidian` → `plugins` folder
+   - If the `plugins` folder doesn't exist, create it
+   - Create a new folder inside `plugins` called `gm-vault-exporter`
+   - From the extracted ZIP folder, copy these 2 files:
+     - `main.js`
+     - `manifest.json`
+   - Paste them into the `gm-vault-exporter` folder you just created
+
+5. **Enable the plugin:**
+   - Go back to Obsidian
+   - Go to **Settings** → **Community plugins**
+   - Find **"GM Vault Exporter"** in the list
+   - Toggle it **ON**
+
+**That's it!** 🎉
+
+#### Method 2: Using BRAT (For automatic updates)
+
+If you want the plugin to update automatically:
 
 1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat) from Community Plugins
 2. Open **Settings → BRAT → Add Beta Plugin**
-3. Paste this repository URL: `https://github.com/lolergb/obsidian-gm-vault-exporter`
+3. Paste: `https://github.com/lolergb/obsidian-gm-vault-exporter`
 4. Click **Add Plugin**
 5. Enable the plugin in **Settings → Community plugins**
-
-#### Option B: Manual Installation
-
-1. Download the latest release from [GitHub Releases](https://github.com/lolergb/obsidian-gm-vault-exporter/releases)
-2. Extract the `main.js` and `manifest.json` files
-3. Create folder `.obsidian/plugins/gm-vault-exporter/` in your vault
-4. Copy `main.js` and `manifest.json` into that folder
-5. Reload Obsidian
-6. Enable the plugin in **Settings → Community plugins**
-
-> **Note:** Once published to Obsidian Community Plugins, you'll be able to install it directly from the Community Plugins browser.
 
 ### 2. Select session folder
 
