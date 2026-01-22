@@ -10,7 +10,6 @@
  */
 
 import { TFile, TFolder } from 'obsidian';
-import { slugify } from '../utils/slugify.js';
 import MarkdownIt from 'markdown-it';
 
 /**

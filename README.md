@@ -1,204 +1,212 @@
-# GM Vault Exporter - Plugin de Obsidian
+# GM Vault Exporter - Obsidian Plugin
 
-Plugin de Obsidian que expone un endpoint HTTP local para generar JSON compatible con GM Vault desde tus notas de sesión.
+Obsidian plugin that exports your vault to a JSON file compatible with **[GM Vault](https://owlbear-gm-vault.netlify.app)** for [Owlbear Rodeo](https://www.owlbear.rodeo/).
 
-## 🎯 ¿Qué es esto?
+## 🎯 What is this?
 
-Este plugin permite a los Game Masters (GMs) de juegos de rol usar sus notas de Obsidian directamente con **GM Vault**, una extensión de Owlbear Rodeo que organiza y muestra contenido durante las sesiones.
+This plugin is a companion tool for **GM Vault**, an Owlbear Rodeo extension that allows Game Masters to organize and share content during tabletop RPG sessions.
 
-El plugin:
-- ✅ Lee una **Página de Sesión** seleccionada en Obsidian
-- ✅ Expone su estructura como JSON en `http://localhost:3000/gm-vault`
-- ✅ Renderiza páginas individuales como HTML en `http://localhost:3000/pages/:slug`
-- ✅ Funciona solo en localhost (seguro y privado)
-- ✅ Está desactivado por defecto (debes habilitarlo explícitamente)
+**GM Vault Exporter** allows you to:
+- ✅ Export your complete Obsidian vault to GM Vault format
+- ✅ Render Markdown to HTML with Notion styles
+- ✅ Convert wiki links `[[page]]` into clickable mentions
+- ✅ Convert tags `#tag` into Notion-style badges
+- ✅ Work completely offline (local-first approach)
+- ✅ Generate JSON files ready to import into GM Vault
 
-## 📋 ¿Qué es una Página de Sesión?
+> **Note:** This plugin generates static JSON files that you import into GM Vault. It does not require an HTTP server or external connections.
 
-Una **Página de Sesión** es una nota de Obsidian que organiza tu contenido de juego usando una estructura específica:
+## 🚀 Quick Start
 
-- **Headings (H1/H2)** representan **categorías** (carpetas en GM Vault)
-- **Wiki links** `[[nombre|texto]]` bajo un heading representan **páginas**
-- **Headings especiales** aplican tipos de bloque:
-  - `## Tables` → páginas con `blockTypes: ["table"]`
-  - `## Quotes` → páginas con `blockTypes: ["quote"]`
-  - `## Images` → páginas con `blockTypes: ["image"]`
-  - `## Enemies` → crea subcategorías para enemigos
+### 1. Installation
 
-### Ejemplo de Página de Sesión
+1. Copy this folder to `.obsidian/plugins/gm-vault-exporter/` in your vault
+2. Reload Obsidian
+3. Enable the plugin in **Settings → Community plugins**
 
-```markdown
-# Mi Aventura
+### 2. Select session folder
 
-## Acto I
+1. Run the command: **"Select session folder"**
+   - Or use `Cmd/Ctrl + P` and search for "Select session folder"
+2. Select the folder that contains your session notes
 
-- [[Escena 1|La llegada]]
-- [[Escena 2|El encuentro]]
+### 3. Export vault
 
-## Tables
+1. Run the command: **"Export vault to JSON"**
+   - Or use `Cmd/Ctrl + P` and search for "Export vault to JSON"
+2. The JSON file will be created in the root of your vault with the name: `gm-vault-[folder-name]-[date].json`
 
-- [[Tabla de encuentros aleatorios]]
+### 4. Import into GM Vault
 
-## Enemies
+1. Open **GM Vault** in Owlbear Rodeo
+2. Go to **Settings → Import JSON**
+3. Select the generated JSON file
+4. Done! Your vault will be available in GM Vault
 
-- [[Goblin]]
-- [[Orco]]
+## 📋 Vault Structure
+
+The plugin exports the complete folder and markdown file structure of your vault:
+
+- **Folders** → Converted to **categories** in GM Vault
+- **`.md` files** → Converted to **pages** with rendered HTML
+- **Image-only folders** → Converted to **image galleries**
+
+### Special Features
+
+- **Wiki links** `[[page]]` → Converted to clickable mentions that navigate between pages
+- **Tags** `#tag` → Converted to colored Notion-style badges
+- **Markdown** → Fully rendered (bold, italic, lists, tables, etc.)
+- **External images** → Kept (URLs with `http://` or `https://`)
+- **Local images** → Replaced with placeholders (use external URLs to include images)
+
+## 📝 Usage Example
+
+```
+My Vault/
+├── Characters/
+│   ├── Player 1.md          → Page "Player 1"
+│   └── NPCs/
+│       └── Goblin.md        → Page "Goblin" in category "NPCs"
+├── Locations/
+│   └── Tavern.md            → Page "Tavern"
+└── Sessions/
+    └── Session 1.md         → Page "Session 1"
 ```
 
-Esto se convierte en:
-- Categoría "Acto I" con dos páginas
-- Categoría "Tables" con una página (tipo "table")
-- Categoría "Enemies" con dos subcategorías (una por enemigo)
-
-## 🚀 Cómo usar
-
-### 1. Instalación
-
-1. **Instala cloudflared** (requerido para el túnel HTTPS):
-   - **macOS**: `brew install cloudflared`
-   - **Linux**: Descarga desde https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/
-   - **Windows**: Descarga el ejecutable desde la misma URL
-   - Verifica la instalación: `cloudflared --version`
-
-2. Copia esta carpeta a `.obsidian/plugins/gm-vault-exporter/` en tu vault
-3. Recarga Obsidian
-4. Activa el plugin en Configuración → Plugins
-
-### 2. Seleccionar una Página de Sesión
-
-1. Abre la nota que quieres usar como página de sesión
-2. Ejecuta el comando: **"Seleccionar página de sesión"**
-   - O usa `Cmd/Ctrl + P` y busca "Seleccionar página de sesión"
-
-### 3. Habilitar el acceso
-
-1. Ejecuta el comando: **"Habilitar acceso a GM Vault"**
-   - El servidor se iniciará localmente
-   - **Se creará automáticamente un túnel HTTPS público** (usando cloudflared)
-   - Verás una notificación con la **URL HTTPS pública**: `https://random-name.trycloudflare.com`
-
-### 4. Conectar GM Vault
-
-En GM Vault (Owlbear Rodeo):
-
-**Usa la URL HTTPS pública (Recomendado):**
-1. Ve a Configuración en GM Vault
-2. En "Importar JSON", pega la **URL HTTPS pública** que aparece en la notificación: `https://random-name.trycloudflare.com/gm-vault`
-3. GM Vault cargará tu estructura de sesión
-
-> 💡 **Nota**: 
-> - La URL pública es **HTTPS** (segura) y temporal (cambia cada vez que activas el servidor)
-> - Es **gratis** y **sin registro**
-> - Requiere tener **cloudflared** instalado
-> - Esta es la única URL que debes usar (el servidor local HTTP es solo interno)
-
-### 5. Ver la URL pública (cuando la necesites)
-
-Ejecuta el comando: **"Mostrar URL pública del túnel"**
-- Te mostrará la URL pública actual
-- La copiará automáticamente al portapapeles
-- Útil si olvidaste la URL o necesitas compartirla
-
-### 6. Deshabilitar (cuando termines)
-
-Ejecuta el comando: **"Deshabilitar acceso a GM Vault"**
-- Esto detendrá tanto el servidor local como el túnel público
-
-## 🔒 Seguridad
-
-- ✅ El servidor **solo escucha en localhost** (127.0.0.1)
-- ✅ **Túnel HTTPS público opcional** usando cloudflared (Cloudflare)
-  - La URL pública es temporal y se genera aleatoriamente (ej: `https://random-name.trycloudflare.com`)
-  - Solo funciona mientras el servidor está activo
-  - Gratuito y sin registro
-  - Requiere tener cloudflared instalado en tu sistema
-- ✅ **CORS está habilitado** para permitir conexiones desde el navegador
-  - Incluye soporte para Private Network Access (Chrome)
-- ✅ El servidor está **desactivado por defecto**
-- ✅ Solo se activa cuando lo habilitas explícitamente
-
-> ⚠️ **Importante**: Si usas el túnel público, cualquier persona con la URL puede acceder a tus notas mientras el servidor esté activo. Solo comparte la URL con personas de confianza.
-
-## 📡 Endpoints HTTP
-
-### `GET /gm-vault`
-
-Retorna el JSON completo de la sesión en formato GM Vault.
-
-**Respuesta:**
+Exported as:
 ```json
 {
   "categories": [
     {
-      "name": "Acto I",
-      "pages": [
+      "name": "Characters",
+      "items": [
+        { "type": "page", "name": "Player 1", "htmlContent": "..." },
         {
-          "name": "La llegada",
-          "url": "http://localhost:3000/pages/escena-1"
+          "type": "category",
+          "name": "NPCs",
+          "items": [
+            { "type": "page", "name": "Goblin", "htmlContent": "..." }
+          ]
         }
+      ]
+    },
+    {
+      "name": "Locations",
+      "items": [
+        { "type": "page", "name": "Tavern", "htmlContent": "..." }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "items": [
+        { "type": "page", "name": "Session 1", "htmlContent": "..." }
       ]
     }
   ]
 }
 ```
 
-### `GET /pages/:slug`
+## 🎨 Features
 
-Renderiza una página Markdown como HTML.
+### Wiki Links (Mentions)
 
-**Ejemplo:** `GET /pages/escena-1` → HTML renderizado de la nota "Escena 1"
+Obsidian wiki links are automatically converted to clickable mentions:
 
-## 🏗️ Arquitectura
+```markdown
+The character [[Player 1]] visited [[Tavern]].
+```
 
-El plugin está diseñado con una arquitectura limpia y modular:
+They become mentions that navigate between pages in GM Vault, just like Notion mentions.
 
-- **`PluginController`**: Orquesta todos los módulos, maneja comandos
-- **`ServerManager`**: Gestiona el servidor HTTP (inicio/parada/rutas)
-- **`TunnelManager`**: Gestiona el túnel HTTPS público con localtunnel
-- **`SessionParser`**: Lee y parsea notas de Obsidian → modelos de dominio
-- **`GMVaultJSONBuilder`**: Convierte modelos → JSON de GM Vault
-- **`MarkdownRenderer`**: Convierte Markdown → HTML
-- **Modelos de dominio**: `Session`, `Category`, `Page` (framework-agnósticos)
+### Tags
 
-Esta arquitectura facilita:
-- ✅ Testing futuro
-- ✅ Extensiones (Dataview, múltiples sesiones, etc.)
-- ✅ Mantenimiento y debugging
+Tags are converted to colored Notion-style badges:
 
-## 🐛 Solución de problemas
+```markdown
+tags: #character, #npc, #location
+```
 
-### "El puerto 3000 ya está en uso"
+Each tag gets a consistent color based on its name, matching GM Vault's Notion-style UI.
 
-Cambia el puerto editando `PluginController.js` (línea `this.port = 3000`).
+### Full Markdown Support
 
-### "No hay página de sesión seleccionada"
+- **Bold**: `**text**` → `<strong>text</strong>`
+- **Italic**: `*text*` → `<em>text</em>`
+- **Lists**: Rendered with Notion styles
+- **Tables**: Rendered with Notion styles
+- **Code**: Rendered with Notion styles
+- **External links**: Open in new tab
 
-1. Abre la nota que quieres usar
-2. Ejecuta "Seleccionar página de sesión"
+## 🔒 Security and Privacy
 
-### Las páginas no se cargan en GM Vault
+- ✅ **100% local**: All processing happens on your machine
+- ✅ **No servers**: No internet connection required
+- ✅ **No shared data**: JSON is generated locally
+- ✅ **Full control**: You decide when to export and what to share
 
-1. Verifica que el servidor esté activo (deberías ver una notificación)
-2. Abre `http://localhost:3000/gm-vault` en tu navegador para verificar
-3. Revisa la consola del navegador en GM Vault para errores
+## 🐛 Troubleshooting
 
-## 📝 Notas
+### "No session folder selected"
 
-- El plugin **no modifica** tus notas de Obsidian
-- Es **solo lectura** (no puedes editar desde GM Vault)
-- Los cambios en Obsidian requieren **recargar** en GM Vault
-- El servidor se detiene automáticamente al desactivar el plugin
+1. Run the "Select session folder" command
+2. Select the folder that contains your notes
 
-## 🔮 Futuras mejoras
+### Images don't appear
 
-La arquitectura permite fácilmente:
-- Soporte para Dataview queries
-- Múltiples sesiones simultáneas
-- Más tipos de bloque
-- Exportación a otros formatos
-- Autenticación opcional
+- Local images are omitted by design
+- Use external URLs to include images: `![alt](https://example.com/image.png)`
+- Or upload images to a hosting service (Imgur, Cloudinary, etc.)
+
+### Mentions don't work
+
+- Make sure file names match the wiki links
+- Wiki links are case-insensitive: `[[Player 1]]` and `[[player 1]]` work the same
+
+### Import error in GM Vault
+
+- Verify the JSON file was generated correctly
+- Check the GM Vault console for error messages
+- Ensure the JSON structure matches GM Vault's expected format
+
+## 📝 Notes
+
+- The plugin **does not modify** your Obsidian notes
+- It's **read-only** (you can't edit from GM Vault)
+- Changes in Obsidian require **re-exporting** the vault
+- The JSON file is overwritten each time you export
+
+## 🔗 Related Projects
+
+- **[GM Vault](https://owlbear-gm-vault.netlify.app)** - The Owlbear Rodeo extension this plugin exports to
+- **[Owlbear Rodeo](https://www.owlbear.rodeo/)** - Virtual tabletop for tabletop RPGs
+
+## 🏗️ Architecture
+
+The plugin is designed with a simple and modular architecture:
+
+- **`PluginController`**: Orchestrates commands and state
+- **`VaultExporter`**: Exports vault to JSON with embedded HTML
+- **Markdown-it**: Renders Markdown to HTML
+- **Notion styles**: Applies Notion CSS classes for visual consistency with GM Vault
+
+## 🔮 Future Improvements
+
+- Dataview queries support
+- Export filters (export only certain folders)
+- Style customization options
+- Incremental export (only changes)
+- Direct integration with GM Vault (future)
+
+## 💬 Support
+
+For questions, bug reports, or feature requests:
+
+1. **Check the documentation**: See [docs/INSTALACION.md](docs/INSTALACION.md) for installation help
+2. **GM Vault support**: Visit the [GM Vault support page](https://solid-jingle-6ee.notion.site/2d8d4856c90e8129b5f7ebf776e82335?pvs=106)
+3. **Report issues**: Open an issue in the project repository
 
 ---
 
-**Desarrollado con ❤️ para la comunidad de GMs de juegos de rol**
+**Developed with ❤️ for the tabletop RPG GM community**
 
+Part of the **GM Vault** ecosystem for Owlbear Rodeo.
