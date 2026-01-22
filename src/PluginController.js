@@ -76,7 +76,7 @@ export class PluginController {
 		
 		this.plugin.addCommand({
 			id: 'export-vault-json',
-			name: 'Export vault to JSON',
+			name: 'Export vault for GM Vault',
 			callback: () => this.exportVaultToJson()
 		});
 	}
@@ -91,12 +91,12 @@ export class PluginController {
 	 */
 	async exportVaultToJson() {
 		if (!this.currentSessionFolder) {
-			new Notice('❌ Por favor, selecciona primero una carpeta de sesión');
+			new Notice('❌ Please select a session folder first');
 			return;
 		}
 
 		try {
-			new Notice('⏳ Exportando vault...');
+			new Notice('⏳ Exporting your vault for GM Vault...');
 			
 			// Exportar usando VaultExporter (sin opciones de imagen)
 			const json = await this.vaultExporter.exportVault(this.currentSessionFolder);
@@ -139,11 +139,19 @@ export class PluginController {
 			};
 			countPages(json.categories);
 			
-			new Notice(`✅ Vault exportado correctamente!\n\n📁 ${fileName}\n📊 ${pageCount} páginas\n💾 ${sizeKB} KB\n\n💡 Nota: Las imágenes locales se omiten. Usa URLs externas para incluir imágenes.\n\nImporta este archivo en GM Vault`, 10000);
+			// Mensaje más amigable sin mencionar "JSON"
+			new Notice(
+				`✅ Your vault has been exported successfully!\n\n` +
+				`📁 File: ${fileName}\n` +
+				`📊 ${pageCount} pages exported\n` +
+				`💾 Size: ${sizeKB} KB\n\n` +
+				`📥 Next step: Open GM Vault in Owlbear Rodeo → Settings → Import → Select this file`,
+				12000
+			);
 			
 		} catch (error) {
-			console.error('Error exportando vault:', error);
-			new Notice(`❌ Error al exportar: ${error.message}`);
+			console.error('Error exporting vault:', error);
+			new Notice(`❌ Error exporting vault: ${error.message}`);
 		}
 	}
 
@@ -173,7 +181,7 @@ export class PluginController {
 			constructor(app, folders) {
 				super(app);
 				this.folders = folders;
-				this.setPlaceholder('Escribe para filtrar carpetas...');
+				this.setPlaceholder('Type to search folders...');
 			}
 			
 			getSuggestions(query) {
@@ -192,7 +200,7 @@ export class PluginController {
 			
 			async onChooseSuggestion(folder, evt) {
 				controller.currentSessionFolder = folder;
-				new Notice(`✅ Carpeta de sesión seleccionada: ${folder.path}`);
+				new Notice(`✅ Session folder selected: ${folder.path}`);
 				await controller._saveSettings();
 			}
 		}
