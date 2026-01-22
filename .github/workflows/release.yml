@@ -32,13 +32,28 @@ jobs:
 
       - name: Create install-ready ZIP
         run: |
-          mkdir -p gm-vault-exporter
-          cp main.js gm-vault-exporter/
-          cp manifest.json gm-vault-exporter/
-          zip -r "gm-vault-exporter-v${{ steps.version.outputs.version }}.zip" gm-vault-exporter -x "*.DS_Store"
-          rm -rf gm-vault-exporter
-          echo "ZIP contents:"
-          unzip -l "gm-vault-exporter-v${{ steps.version.outputs.version }}.zip"
+          # Create plugin folder
+          PLUGIN_DIR="gm-vault-exporter"
+          mkdir -p "$PLUGIN_DIR"
+          
+          # Copy only the essential files
+          cp main.js "$PLUGIN_DIR/"
+          cp manifest.json "$PLUGIN_DIR/"
+          
+          # Create ZIP file (same method as local script)
+          ZIP_NAME="gm-vault-exporter-v${{ steps.version.outputs.version }}.zip"
+          zip -r "$ZIP_NAME" "$PLUGIN_DIR" -x "*.DS_Store"
+          
+          # Clean up
+          rm -rf "$PLUGIN_DIR"
+          
+          # Verify ZIP contents
+          echo "=== ZIP contents verification ==="
+          unzip -l "$ZIP_NAME"
+          echo "=== End verification ==="
+          
+          # List files to confirm
+          ls -lh "$ZIP_NAME"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
