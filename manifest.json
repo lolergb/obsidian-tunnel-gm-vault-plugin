@@ -1,11 +1,11 @@
 {
-	"id": "gm-vault-exporter",
-	"name": "GM Vault Exporter",
+	"id": "gm-vault-exporter-tunnel",
+	"name": "GM Vault Exporter (Tunnel)",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Export your Obsidian vault to GM Vault for Owlbear Rodeo. Generate JSON files compatible with the GM Vault extension (local-first approach).",
-	"author": "Lole Roman",
-	"authorUrl": "https://www.notion.so/Quick-Start-2d8d4856c90e80f1b4e4ecff59e61dd5",
+	"description": "Expone un endpoint HTTP local con túnel HTTPS público para generar JSON compatible con GM Vault desde notas de Obsidian",
+	"author": "Your Name",
+	"authorUrl": "",
 	"fundingUrl": "",
 	"isDesktopOnly": true
 }

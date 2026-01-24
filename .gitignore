@@ -4,3 +4,6 @@ node_modules/
 dist/
 .obsidian/
 vault/
+main.js
+*.zip
+*.json.bak

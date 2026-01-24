@@ -10,6 +10,7 @@
  */
 
 import { TFile, TFolder } from 'obsidian';
+import { slugify } from '../utils/slugify.js';
 import MarkdownIt from 'markdown-it';
 
 /**
@@ -41,8 +42,7 @@ export class VaultExporter {
 		this.md = new MarkdownIt({
 			html: true,
 			linkify: true,
-			typographer: true,
-			breaks: false  // No convertir saltos de línea simples en <br>
+			typographer: true
 		});
 		
 		/**
@@ -255,24 +255,27 @@ export class VaultExporter {
 			
 			for (let j = 0; j < 3 && (i + j) < imageFiles.length; j++) {
 				const imageFile = imageFiles[i + j];
-				imagesHtml += `<div class="notion-column">
-	<div class="notion-image-container" style="padding: 20px; text-align: center; background: #f5f5f5; border-radius: 4px;">
-		<p style="color: #666; margin: 0;">🖼️ ${this._escapeHtml(imageFile.name)}</p>
-		<p style="color: #999; font-size: 12px; margin: 5px 0 0 0;">(Usa URL externa)</p>
-	</div>
-</div>`;
+				imagesHtml += `
+					<div class="notion-column">
+						<div class="notion-image-container" style="padding: 20px; text-align: center; background: #f5f5f5; border-radius: 4px;">
+							<p style="color: #666; margin: 0;">🖼️ ${this._escapeHtml(imageFile.name)}</p>
+							<p style="color: #999; font-size: 12px; margin: 5px 0 0 0;">(Usa URL externa)</p>
+						</div>
+					</div>`;
 			}
 			
 			imagesHtml += '</div>';
 		}
 		
-		const htmlContent = `<h1 class="notion-page-title">${this._escapeHtml(folder.name)}</h1>
-<div class="notion-callout" style="background: #fef3c7; border-left: 3px solid #f59e0b; padding: 12px; margin: 16px 0; border-radius: 4px;">
-	<p style="margin: 0; color: #92400e;">
-		<strong>💡 Tip:</strong> Sube las imágenes a un servicio de hosting (Imgur, Cloudinary) y usa URLs externas.
-	</p>
-</div>
-${imagesHtml}`;
+		const htmlContent = `
+			<h1 class="notion-page-title">${this._escapeHtml(folder.name)}</h1>
+			<div class="notion-callout" style="background: #fef3c7; border-left: 3px solid #f59e0b; padding: 12px; margin: 16px 0; border-radius: 4px;">
+				<p style="margin: 0; color: #92400e;">
+					<strong>💡 Tip:</strong> Sube las imágenes a un servicio de hosting (Imgur, Cloudinary) y usa URLs externas.
+				</p>
+			</div>
+			${imagesHtml}
+		`;
 		
 		return {
 			type: 'page',
@@ -291,24 +294,7 @@ ${imagesHtml}`;
 	 * @returns {string} HTML renderizado
 	 */
 	_renderMarkdown(markdown) {
-		let html = this.md.render(markdown);
-		
-		// Limpiar saltos de línea innecesarios al inicio y final
-		html = html.replace(/^\s*\n+/g, '');
-		html = html.replace(/\n+\s*$/g, '');
-		
-		// Limpiar múltiples saltos de línea consecutivos (más de 2)
-		html = html.replace(/\n{3,}/g, '\n\n');
-		
-		// Limpiar <br> tags innecesarios dentro de párrafos (excepto si son intencionales)
-		// Convertir <br><br> o múltiples <br> seguidos en un solo salto de párrafo
-		html = html.replace(/(<br\s*\/?>\s*){2,}/gi, '</p><p class="notion-paragraph">');
-		
-		// Limpiar espacios en blanco excesivos dentro de párrafos
-		html = html.replace(/(<p[^>]*>)\s+/g, '$1');
-		html = html.replace(/\s+(<\/p>)/g, '$1');
-		
-		return html;
+		return this.md.render(markdown);
 	}
 
 	/**
@@ -526,14 +512,6 @@ ${imagesHtml}`;
 	_addNotionClasses(html) {
 		let processed = html;
 		
-		// Limpiar saltos de línea dentro de párrafos antes de procesar
-		// Reemplazar saltos de línea simples dentro de <p> por espacios
-		processed = processed.replace(/(<p[^>]*>)([\s\S]*?)(<\/p>)/gi, (match, openTag, content, closeTag) => {
-			// Limpiar saltos de línea y espacios múltiples dentro del contenido
-			const cleaned = content.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
-			return openTag + cleaned + closeTag;
-		});
-		
 		// Párrafos
 		processed = processed.replace(/<p>/gi, '<p class="notion-paragraph">');
 		
@@ -620,10 +598,7 @@ ${imagesHtml}`;
 			titleHtml = this._escapeHtml(title);
 		}
 		
-		// Limpiar saltos de línea innecesarios al inicio del contenido
-		cleanedContent = cleanedContent.replace(/^\s*\n+/g, '');
-		
-		return `<h1 class="notion-page-title">${titleHtml}</h1>${cleanedContent}`;
+		return `<h1 class="notion-page-title">${titleHtml}</h1>\n${cleanedContent}`;
 	}
 
 	// ============================================
