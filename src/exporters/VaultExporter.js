@@ -88,7 +88,7 @@ export class VaultExporter {
 	async _buildPageMap(folder) {
 		for (const child of folder.children || []) {
 			if (child instanceof TFile && child.extension === 'md') {
-				const pageName = await this._getPageName(child);
+				const pageName = child.basename;
 				const pageId = generatePageId();
 				
 				// Guardar por basename (sin extensión) para resolución de wiki links
@@ -97,15 +97,6 @@ export class VaultExporter {
 					name: pageName,
 					path: child.path
 				});
-				
-				// También guardar por nombre de página si es diferente
-				if (pageName.toLowerCase() !== child.basename.toLowerCase()) {
-					this.pageMap.set(pageName.toLowerCase(), { 
-						id: pageId, 
-						name: pageName,
-						path: child.path
-					});
-				}
 			} else if (child instanceof TFolder) {
 				// También registrar carpetas de imágenes como páginas
 				const imageFiles = await this._getImageFiles(child);
@@ -204,7 +195,7 @@ export class VaultExporter {
 	 * @returns {Promise<Object>} Página en formato JSON con htmlContent
 	 */
 	async _exportPage(file, parentFolder) {
-		const pageName = await this._getPageName(file);
+		const pageName = file.basename;
 		const pageInfo = this.pageMap.get(file.basename.toLowerCase());
 		const pageId = pageInfo?.id || generatePageId();
 		
@@ -642,27 +633,10 @@ export class VaultExporter {
 
 	/**
 	 * Obtiene el nombre de una página desde el archivo.
+	 * Simplificado: usa directamente el basename del archivo.
 	 * @private
 	 */
 	async _getPageName(file) {
-		try {
-			const content = await this.app.vault.read(file);
-			const lines = content.split('\n');
-			const h1Regex = /^#\s+(.+)$/;
-			for (const line of lines) {
-				const match = line.match(h1Regex);
-				if (match) {
-					let name = match[1].trim();
-					// Limpiar wiki links del título
-					name = name.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, '$1');
-					// Limpiar markdown del nombre (para el campo name del JSON)
-					name = this._cleanMarkdownFromText(name);
-					return name;
-				}
-			}
-		} catch (e) {
-			// Error leyendo archivo
-		}
 		return file.basename;
 	}
 

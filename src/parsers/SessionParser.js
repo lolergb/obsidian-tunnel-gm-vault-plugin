@@ -199,33 +199,13 @@ export class SessionParser {
 
 	/**
 	 * Obtiene el nombre de una página desde el archivo.
-	 * Busca el primer H1, si no existe usa el nombre del archivo.
+	 * Simplificado: usa directamente el basename del archivo.
 	 * 
 	 * @private
 	 * @param {import('obsidian').TFile} file - Archivo de la página
 	 * @returns {Promise<string>} Nombre de la página
 	 */
 	async _getPageName(file) {
-		try {
-			const content = await this.app.vault.read(file);
-			const lines = content.split('\n');
-			
-			// Buscar el primer H1
-			const h1Regex = /^#\s+(.+)$/;
-			for (const line of lines) {
-				const match = line.match(h1Regex);
-				if (match) {
-					// Limpiar el nombre (remover wiki links si los hay)
-					let name = match[1].trim();
-					name = name.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, '$1');
-					return name;
-				}
-			}
-		} catch (e) {
-			// Si hay error leyendo el archivo, usar el nombre del archivo
-		}
-		
-		// Si no hay H1, usar el nombre del archivo (sin extensión)
 		return file.basename;
 	}
 }
