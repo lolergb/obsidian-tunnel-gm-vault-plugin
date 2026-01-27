@@ -176,6 +176,9 @@ export class PluginController {
 			new Notice(`✅ Acceso a GM Vault habilitado (HTTPS):\n${publicUrl}\n\nUsa esta URL en GM Vault:\n${publicUrl}/gm-vault`, 10000);
 			
 			await this._saveSettings();
+			
+			// Copiar automáticamente la URL de GM-vault al portapapeles
+			await this.copyGmVaultUrl();
 		} catch (error) {
 			new Notice(`❌ Error al iniciar el servidor: ${error.message}`);
 		}
