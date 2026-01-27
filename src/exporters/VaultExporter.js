@@ -65,9 +65,14 @@ export class VaultExporter {
 		
 		// Paso 2: Obtener nombre de la categoría raíz
 		const sessionFile = await this._findSessionFile(sessionFolder);
-		const rootCategoryName = sessionFile 
+		let rootCategoryName = sessionFile 
 			? await this._getRootCategoryName(sessionFile)
 			: sessionFolder.name;
+		
+		// Si el nombre está vacío (carpeta raíz), usar nombre del vault o fallback
+		if (!rootCategoryName || rootCategoryName.trim() === '') {
+			rootCategoryName = this._getRootCategoryNameFallback();
+		}
 		
 		// Paso 3: Exportar la estructura con mentions resueltos
 		const rootCategory = await this._exportFolder(sessionFolder, sessionFile);
@@ -609,6 +614,21 @@ export class VaultExporter {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Obtiene un nombre amigable para la categoría raíz cuando está vacío.
+	 * Usa el nombre del vault si está disponible, sino usa "Vault".
+	 * @private
+	 * @returns {string} Nombre de la categoría raíz
+	 */
+	_getRootCategoryNameFallback() {
+		try {
+			const vaultName = this.app.vault.getName();
+			return vaultName && vaultName.trim() !== '' ? vaultName : 'Vault';
+		} catch (e) {
+			return 'Vault';
+		}
 	}
 
 	/**

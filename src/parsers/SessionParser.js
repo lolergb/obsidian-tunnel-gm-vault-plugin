@@ -47,9 +47,14 @@ export class SessionParser {
 		
 		// Obtener el nombre para la categoría raíz
 		// Si hay un archivo de sesión, usar su primer H1, sino usar el nombre de la carpeta
-		const rootCategoryName = sessionFile 
+		let rootCategoryName = sessionFile 
 			? await this._getRootCategoryName(sessionFile)
 			: sessionFolder.name;
+		
+		// Si el nombre está vacío (carpeta raíz), usar nombre del vault o fallback
+		if (!rootCategoryName || rootCategoryName.trim() === '') {
+			rootCategoryName = this._getRootCategoryNameFallback();
+		}
 		
 		// Crear la categoría raíz
 		const rootCategory = new Category(rootCategoryName);
@@ -81,6 +86,21 @@ export class SessionParser {
 		return null;
 	}
 	
+	/**
+	 * Obtiene un nombre amigable para la categoría raíz cuando está vacío.
+	 * Usa el nombre del vault si está disponible, sino usa "Vault".
+	 * @private
+	 * @returns {string} Nombre de la categoría raíz
+	 */
+	_getRootCategoryNameFallback() {
+		try {
+			const vaultName = this.app.vault.getName();
+			return vaultName && vaultName.trim() !== '' ? vaultName : 'Vault';
+		} catch (e) {
+			return 'Vault';
+		}
+	}
+
 	/**
 	 * Obtiene el nombre para la categoría raíz desde el archivo de sesión.
 	 * Busca el primer H1, si no existe usa el nombre del archivo.
