@@ -69,8 +69,16 @@ export class VaultExporter {
 			? await this._getRootCategoryName(sessionFile)
 			: sessionFolder.name;
 		
-		// Si el nombre está vacío (carpeta raíz), usar nombre del vault o fallback
-		if (!rootCategoryName || rootCategoryName.trim() === '') {
+		// Detectar si es la carpeta raíz (path vacío, "/" o name vacío/null/undefined)
+		const folderPath = (sessionFolder.path || '').trim();
+		const folderName = (sessionFolder.name || '').trim();
+		const isRootFolder = folderPath === '' || folderPath === '/' || folderName === '';
+		
+		// Si el nombre está vacío o es la carpeta raíz, usar nombre del vault o fallback
+		const isEmptyName = !rootCategoryName || 
+			(typeof rootCategoryName === 'string' && rootCategoryName.trim() === '');
+		
+		if (isRootFolder || isEmptyName) {
 			rootCategoryName = this._getRootCategoryNameFallback();
 		}
 		
