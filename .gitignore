@@ -3,7 +3,8 @@ node_modules/
 *.log
 dist/
 .obsidian/
-vault/
+vault-name/
+Untitled.base
 main.js
 *.zip
 *.json.bak
