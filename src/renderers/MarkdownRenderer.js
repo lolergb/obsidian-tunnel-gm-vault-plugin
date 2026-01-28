@@ -393,27 +393,32 @@ export class MarkdownRenderer {
 						const pageInfo = pageMap.get(linkPath.toLowerCase());
 						
 						if (pageInfo) {
-							// Página encontrada: crear mention clickeable
+							// Página encontrada: crear enlace con mention
 							const urlBase = baseUrl || this.baseUrl;
 							const mentionUrl = urlBase 
 								? `${urlBase}/pages/${this._slugify(linkPath)}`
 								: `/pages/${this._slugify(linkPath)}`;
 							
-							return `<span 
-								class="notion-mention notion-mention--link" 
+							return `<a 
+								href="${this._escapeHtml(mentionUrl)}"
+								class="notion-mention notion-mention--link notion-text-link" 
 								data-mention-page-id="${pageInfo.id}"
 								data-mention-page-name="${this._escapeHtml(pageInfo.name)}"
 								data-mention-page-url="${this._escapeHtml(mentionUrl)}"
-								role="button"
-								tabindex="0"
 								aria-label="Open ${this._escapeHtml(pageInfo.name)}"
-							>${this._escapeHtml(displayName)}</span>`;
+							>${this._escapeHtml(displayName)}</a>`;
 						} else {
-							// Página no encontrada: renderizar como mention plain
-							return `<span 
-								class="notion-mention notion-mention--plain" 
+							// Página no encontrada: renderizar como enlace sin href
+							const urlBase = baseUrl || this.baseUrl;
+							const mentionUrl = urlBase 
+								? `${urlBase}/pages/${this._slugify(linkPath)}`
+								: `/pages/${this._slugify(linkPath)}`;
+							
+							return `<a 
+								href="${this._escapeHtml(mentionUrl)}"
+								class="notion-mention notion-mention--plain notion-text-link" 
 								data-mention-page-name="${this._escapeHtml(linkPath)}"
-							>${this._escapeHtml(displayName)}</span>`;
+							>${this._escapeHtml(displayName)}</a>`;
 						}
 					}
 					
