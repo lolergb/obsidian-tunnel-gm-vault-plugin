@@ -126,6 +126,41 @@ export class MarkdownRenderer {
 	<div id="notion-content">
 		${content}
 	</div>
+	<script>
+		// Manejar clics en mentions de Notion
+		(function() {
+			const mentions = document.querySelectorAll('.notion-mention--link');
+			
+			mentions.forEach(mention => {
+				if (mention.dataset.listenerAdded) return;
+				mention.dataset.listenerAdded = 'true';
+				
+				// Click handler
+				mention.addEventListener('click', function(e) {
+					e.preventDefault();
+					e.stopPropagation();
+					
+					const pageUrl = this.dataset.mentionPageUrl;
+					if (pageUrl) {
+						window.location.href = pageUrl;
+					}
+				});
+				
+				// Keyboard handler (Enter/Space for accessibility)
+				mention.addEventListener('keydown', function(e) {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						e.stopPropagation();
+						
+						const pageUrl = this.dataset.mentionPageUrl;
+						if (pageUrl) {
+							window.location.href = pageUrl;
+						}
+					}
+				});
+			});
+		})();
+	</script>
 </body>
 </html>`;
 	}
