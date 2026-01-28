@@ -388,21 +388,19 @@ export class MarkdownRenderer {
 					const linkPath = parts[0].trim();
 					const displayName = (parts[1] || parts[0]).trim();
 					
-					// Si hay pageMap, crear mention de Notion como enlace HTML
+					// Si hay pageMap, crear mention de Notion como span
 					if (pageMap) {
 						const pageInfo = pageMap.get(linkPath.toLowerCase());
 						
 						if (pageInfo) {
-							// Página encontrada: crear enlace HTML con estilo de mention
+							// Página encontrada: crear mention clickeable como span
 							const urlBase = baseUrl || this.baseUrl;
 							const mentionUrl = urlBase 
 								? `${urlBase}/pages/${this._slugify(linkPath)}`
 								: `/pages/${this._slugify(linkPath)}`;
 							
-							// Usar enlace HTML para que funcione sin JavaScript
-							// GM Vault puede convertir esto a mention después si es necesario
-							return `<a 
-								href="${this._escapeHtml(mentionUrl)}"
+							// Usar span como GM Vault espera - el JavaScript de GM Vault manejará los clicks
+							return `<span 
 								class="notion-mention notion-mention--link" 
 								data-mention-page-id="${pageInfo.id}"
 								data-mention-page-name="${this._escapeHtml(pageInfo.name)}"
@@ -410,9 +408,9 @@ export class MarkdownRenderer {
 								role="button"
 								tabindex="0"
 								aria-label="Open ${this._escapeHtml(pageInfo.name)}"
-							>${this._escapeHtml(displayName)}</a>`;
+							>${this._escapeHtml(displayName)}</span>`;
 						} else {
-							// Página no encontrada: renderizar como mention plain (sin enlace)
+							// Página no encontrada: renderizar como mention plain
 							return `<span 
 								class="notion-mention notion-mention--plain" 
 								data-mention-page-name="${this._escapeHtml(linkPath)}"
