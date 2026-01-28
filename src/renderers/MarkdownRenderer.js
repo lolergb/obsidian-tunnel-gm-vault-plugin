@@ -46,10 +46,15 @@ export class MarkdownRenderer {
 	 * Renderiza contenido Markdown a HTML.
 	 * 
 	 * @param {string} markdown - Contenido Markdown a renderizar
+	 * @param {string|null} baseUrl - URL base para los wiki links (opcional, usa this.baseUrl si no se proporciona)
 	 * @returns {string} HTML renderizado
 	 */
-	render(markdown) {
-		return this.md.render(markdown);
+	render(markdown, baseUrl = null) {
+		// Procesar wiki links antes del renderizado (pero no en bloques de código)
+		const urlBase = baseUrl || this.baseUrl;
+		const processedMarkdown = this._convertWikiLinksInMarkdown(markdown, urlBase);
+		let html = this.md.render(processedMarkdown);
+		return html;
 	}
 
 	/**
@@ -61,7 +66,9 @@ export class MarkdownRenderer {
 	 * @returns {string} HTML completo de la página
 	 */
 	renderPage(markdown, title, baseUrl = null) {
-		let content = this.render(markdown);
+		// Usar el baseUrl proporcionado o el de la instancia
+		const urlBase = baseUrl || this.baseUrl;
+		let content = this.render(markdown, urlBase);
 		
 		// Convertir URLs relativas a absolutas si hay una URL base
 		const urlBase = baseUrl || this.baseUrl;
@@ -220,43 +227,83 @@ export class MarkdownRenderer {
 
 	/**
 	 * Configura el renderizador para manejar wiki links de Obsidian [[link]].
+	 * Nota: Los wiki links se procesan después del renderizado en el método render().
 	 * 
 	 * @private
 	 */
 	_configureWikiLinks() {
-		// Plugin personalizado para convertir [[wiki links]] a enlaces HTML
-		this.md.use((md) => {
-			// Añade regla para parsear wiki links antes del renderizado normal
-			const defaultInline = md.renderer.rules.text || 
-				((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+		// Los wiki links se procesan después del renderizado en el método render()
+		// para evitar conflictos con el parsing de markdown-it
+	}
+
+	/**
+	 * Convierte wiki links [[nombre]] a enlaces markdown antes del renderizado.
+	 * Evita procesar wiki links dentro de bloques de código (tanto bloques como inline).
+	 * 
+	 * @private
+	 * @param {string} markdown - Markdown con wiki links sin procesar
+	 * @param {string|null} baseUrl - URL base para los enlaces (opcional)
+	 * @returns {string} Markdown con wiki links convertidos a enlaces markdown
+	 */
+	_convertWikiLinksInMarkdown(markdown, baseUrl = null) {
+		// Dividir el markdown en partes: bloques de código y texto normal
+		const parts = [];
+		let lastIndex = 0;
+		
+		// Buscar bloques de código (```...```) y código inline (`...`)
+		// Usar una regex que capture ambos tipos
+		const codeRegex = /```[\s\S]*?```|`[^`\n]+`/g;
+		let match;
+		
+		while ((match = codeRegex.exec(markdown)) !== null) {
+			// Procesar texto antes del código
+			if (match.index > lastIndex) {
+				const beforeCode = markdown.substring(lastIndex, match.index);
+				parts.push({ text: beforeCode, isCode: false });
+			}
+			// Guardar el código sin procesar
+			parts.push({ text: match[0], isCode: true });
+			lastIndex = match.index + match[0].length;
+		}
+		
+		// Procesar el resto del texto
+		if (lastIndex < markdown.length) {
+			parts.push({ text: markdown.substring(lastIndex), isCode: false });
+		}
+		
+		// Si no hay código, procesar todo el texto
+		if (parts.length === 0) {
+			parts.push({ text: markdown, isCode: false });
+		}
+		
+		// Procesar solo las partes que no son código
+		const processedParts = parts.map(part => {
+			if (part.isCode) {
+				return part.text;
+			}
 			
-			md.renderer.rules.text = (tokens, idx, options, env, self) => {
-				const token = tokens[idx];
-				const content = token.content;
+			// Buscar wiki links: [[nombre]] o [[nombre|display]]
+			const wikiLinkRegex = /\[\[([^\]]+)\]\]/g;
+			
+			return part.text.replace(wikiLinkRegex, (match, linkContent) => {
+				// Separar path y display name
+				const parts = linkContent.split('|');
+				const linkPath = parts[0].trim();
+				const displayName = (parts[1] || parts[0]).trim();
 				
-				// Busca wiki links en el contenido
-				const wikiLinkRegex = /\[\[([^\]]+)\]\]/g;
-				if (wikiLinkRegex.test(content)) {
-					// Reemplaza wiki links por enlaces HTML
-					const replaced = content.replace(wikiLinkRegex, (match, linkContent) => {
-						const [linkPath, displayName] = linkContent.includes('|') 
-							? linkContent.split('|').map(s => s.trim())
-							: [linkContent.trim(), linkContent.trim()];
-						
-					// Convierte a slug para la URL
-					const slug = this._slugify(linkPath);
-					const href = this.baseUrl 
-						? `${this.baseUrl}/pages/${slug}`
-						: `/pages/${slug}`;
-					return `<a href="${href}">${this._escapeHtml(displayName)}</a>`;
-					});
-					
-					return replaced;
-				}
+				// Convierte a slug para la URL
+				const slug = this._slugify(linkPath);
+				const urlBase = baseUrl || this.baseUrl;
+				const href = urlBase 
+					? `${urlBase}/pages/${slug}`
+					: `/pages/${slug}`;
 				
-				return defaultInline(tokens, idx, options, env, self);
-			};
+				// Convertir a enlace markdown estándar
+				return `[${displayName}](${href})`;
+			});
 		});
+		
+		return processedParts.join('');
 	}
 
 	/**
