@@ -616,6 +616,7 @@ export class MarkdownRenderer {
 
 	/**
 	 * Añade target="_blank" a enlaces externos (http/https).
+	 * No añade target a enlaces internos que apuntan a /pages/.
 	 * 
 	 * @private
 	 * @param {string} html - HTML con enlaces
@@ -626,6 +627,11 @@ export class MarkdownRenderer {
 			// Si ya tiene target, no modificar
 			const allAttrs = (attrs1 || '') + (attrs2 || '');
 			if (allAttrs.includes('target=')) {
+				return match;
+			}
+			
+			// No añadir target a enlaces internos (que apuntan a /pages/)
+			if (href.includes('/pages/')) {
 				return match;
 			}
 			
