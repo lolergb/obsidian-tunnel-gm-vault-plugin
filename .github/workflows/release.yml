@@ -79,5 +79,6 @@ jobs:
             Or download `main.js` and `manifest.json` individually, or use [BRAT](https://github.com/TfTHacker/obsidian42-brat) to install automatically.
           draft: false
           prerelease: false
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
