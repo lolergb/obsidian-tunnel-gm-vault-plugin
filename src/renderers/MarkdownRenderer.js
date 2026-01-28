@@ -65,13 +65,24 @@ export class MarkdownRenderer {
 	 * @returns {string} HTML renderizado
 	 */
 	render(markdown, baseUrl = null) {
-		// Procesar wiki links antes del renderizado (pero no en bloques de código)
 		const urlBase = baseUrl || this.baseUrl;
-		const processedMarkdown = this._convertWikiLinksInMarkdown(markdown, urlBase);
-		let html = this.md.render(processedMarkdown);
-		// También procesar después del renderizado por si algunos se escaparon
-		html = this._convertWikiLinksInHTML(html, urlBase);
-		return html;
+		
+		// Si tenemos pageMap, procesar wiki links DESPUÉS del renderizado para evitar que markdown-it los procese
+		// Si no tenemos pageMap, procesar antes del renderizado como fallback
+		if (this.pageMap) {
+			// Primero renderizar el markdown normalmente
+			let html = this.md.render(markdown);
+			// Luego convertir los wiki links que quedaron sin procesar a mentions
+			html = this._convertWikiLinksToMentions(html, urlBase);
+			return html;
+		} else {
+			// Fallback: procesar antes del renderizado (pero no en bloques de código)
+			const processedMarkdown = this._convertWikiLinksInMarkdown(markdown, urlBase);
+			let html = this.md.render(processedMarkdown);
+			// También procesar después del renderizado por si algunos se escaparon
+			html = this._convertWikiLinksInHTML(html, urlBase);
+			return html;
+		}
 	}
 
 	/**
@@ -333,6 +344,84 @@ export class MarkdownRenderer {
 				
 				// Convertir a enlace markdown estándar
 				return `[${displayName}](${href})`;
+			});
+		});
+		
+		return processedParts.join('');
+	}
+
+	/**
+	 * Convierte wiki links [[nombre]] a mentions de Notion después del renderizado.
+	 * Usa el pageMap para crear mentions con IDs correctos.
+	 * 
+	 * @private
+	 * @param {string} html - HTML renderizado que puede contener wiki links sin procesar
+	 * @param {string|null} baseUrl - URL base para los enlaces (opcional)
+	 * @returns {string} HTML con wiki links convertidos a mentions
+	 */
+	_convertWikiLinksToMentions(html, baseUrl = null) {
+		if (!this.pageMap) {
+			return html;
+		}
+		
+		// Dividir el HTML en partes: dentro de enlaces/spans y fuera
+		const parts = [];
+		let lastIndex = 0;
+		
+		// Buscar enlaces HTML y spans existentes para no procesar wiki links dentro de ellos
+		const existingElementsRegex = /<(a|span)\s+[^>]*>[\s\S]*?<\/(a|span)>/gi;
+		let match;
+		
+		while ((match = existingElementsRegex.exec(html)) !== null) {
+			// Procesar texto antes del elemento
+			if (match.index > lastIndex) {
+				const beforeElement = html.substring(lastIndex, match.index);
+				parts.push({ text: beforeElement, isElement: false });
+			}
+			// Guardar el elemento sin procesar
+			parts.push({ text: match[0], isElement: true });
+			lastIndex = match.index + match[0].length;
+		}
+		
+		// Procesar el resto del texto
+		if (lastIndex < html.length) {
+			parts.push({ text: html.substring(lastIndex), isElement: false });
+		}
+		
+		// Si no hay elementos, procesar todo el texto
+		if (parts.length === 0) {
+			parts.push({ text: html, isElement: false });
+		}
+		
+		// Procesar solo las partes que no son elementos existentes
+		const processedParts = parts.map(part => {
+			if (part.isElement) {
+				return part.text;
+			}
+			
+			// Buscar wiki links: [[nombre]] o [[nombre|display]]
+			const wikiLinkRegex = /\[\[([^\]]+?)\]\]/g;
+			
+			return part.text.replace(wikiLinkRegex, (match, linkContent) => {
+				// Separar path y display name
+				const parts = linkContent.split('|');
+				const linkPath = parts[0].trim();
+				const displayName = (parts[1] || parts[0]).trim();
+				
+				// Buscar la página en el mapeo
+				const pageInfo = this.pageMap.get(linkPath.toLowerCase());
+				
+				if (pageInfo) {
+					// Página encontrada: crear mention clickeable
+					const urlBase = baseUrl || this.baseUrl;
+					const pageUrl = urlBase 
+						? `${urlBase}/pages/${pageInfo.slug}`
+						: `/pages/${pageInfo.slug}`;
+					return `<span class="notion-mention notion-mention--link" data-mention-page-id="${pageInfo.id}" data-mention-page-name="${this._escapeHtml(pageInfo.name)}" data-mention-page-url="${pageUrl}" role="button" tabindex="0" aria-label="Open ${this._escapeHtml(pageInfo.name)}">${this._escapeHtml(displayName)}</span>`;
+				} else {
+					// Página no encontrada: mention sin link
+					return `<span class="notion-mention notion-mention--plain" data-mention-page-name="${this._escapeHtml(linkPath)}">${this._escapeHtml(displayName)}</span>`;
+				}
 			});
 		});
 		
