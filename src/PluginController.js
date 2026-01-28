@@ -18,16 +18,6 @@ import { MarkdownRenderer } from './renderers/MarkdownRenderer.js';
 import { VaultExporter } from './exporters/VaultExporter.js';
 
 /**
- * Genera un ID único para páginas (mismo formato que GM Vault)
- * @returns {string}
- */
-function generatePageId() {
-	const timestamp = Date.now().toString(36);
-	const random = Math.random().toString(36).slice(2, 8);
-	return `page_${timestamp}_${random}`;
-}
-
-/**
  * Controlador principal que orquesta todos los módulos del plugin.
  * 
  * @class PluginController
@@ -72,12 +62,6 @@ export class PluginController {
 		
 		/** @type {string|null} */
 		this.publicUrl = null;
-		
-		/**
-		 * Mapeo de nombres de archivo a información de página para mentions
-		 * @type {Map<string, {id: string, name: string, path: string}>|null}
-		 */
-		this.pageMap = null;
 	}
 
 	/**
@@ -394,8 +378,6 @@ export class PluginController {
 			
 			async onChooseSuggestion(folder, evt) {
 				controller.currentSessionFolder = folder;
-				// Construir pageMap para mentions
-				await controller._buildPageMap(folder);
 				new Notice(`✅ Carpeta de sesión seleccionada: ${folder.path}`);
 				await controller._saveSettings();
 			}
@@ -459,13 +441,13 @@ export class PluginController {
 				}
 				
 				const markdown = await this.app.vault.read(file);
+				// Construir el mapeo de páginas para convertir wiki links a mentions
+				const pageMap = await this._buildPageMap();
+				this.markdownRenderer.setPageMap(pageMap);
+				
 				// Usar la URL pública si está disponible, sino la URL local
 				const baseUrl = this.publicUrl || this.tunnelManager?.getPublicUrl() || `http://localhost:${this.port}`;
-				// Construir pageMap si no existe
-				if (!this.pageMap && this.currentSessionFolder) {
-					await this._buildPageMap(this.currentSessionFolder);
-				}
-				const html = this.markdownRenderer.renderPage(markdown, file.basename, baseUrl, this.pageMap);
+				const html = this.markdownRenderer.renderPage(markdown, file.basename, baseUrl);
 				
 				this.serverManager.sendHTML(res, html);
 			} catch (error) {
@@ -633,6 +615,96 @@ export class PluginController {
 	}
 
 	/**
+	 * Construye el mapeo de nombres de archivo a información de página para mentions.
+	 * 
+	 * @private
+	 * @returns {Promise<Map<string, {id: string, name: string, slug: string}>>} Mapeo de nombres a información de página
+	 */
+	async _buildPageMap() {
+		const pageMap = new Map();
+		
+		if (!this.currentSessionFolder) {
+			return pageMap;
+		}
+		
+		/**
+		 * Genera un ID único para páginas (mismo formato que GM Vault)
+		 * @returns {string}
+		 */
+		const generatePageId = () => {
+			const timestamp = Date.now().toString(36);
+			const random = Math.random().toString(36).slice(2, 8);
+			return `page_${timestamp}_${random}`;
+		};
+		
+		/**
+		 * Escanea recursivamente una carpeta y añade páginas al mapeo
+		 * @param {import('obsidian').TFolder} folder - Carpeta a escanear
+		 */
+		const scanFolder = async (folder) => {
+			for (const child of folder.children || []) {
+				if (child instanceof TFile && child.extension === 'md') {
+					const pageName = child.basename;
+					const pageId = generatePageId();
+					const pageSlug = slugify(pageName);
+					
+					// Guardar por basename (sin extensión) para resolución de wiki links
+					pageMap.set(child.basename.toLowerCase(), {
+						id: pageId,
+						name: pageName,
+						slug: pageSlug
+					});
+				} else if (child instanceof TFolder) {
+					// También registrar carpetas de imágenes como páginas
+					const imageFiles = await this._getImageFiles(child);
+					const hasOnlyImages = imageFiles.length > 0 && 
+						child.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
+						child.children.filter(c => c.children !== undefined).length === 0;
+					
+					if (hasOnlyImages) {
+						const pageId = generatePageId();
+						const pageSlug = slugify(child.name);
+						pageMap.set(child.name.toLowerCase(), {
+							id: pageId,
+							name: child.name,
+							slug: pageSlug
+						});
+					}
+					
+					// Recursión para subcarpetas
+					await scanFolder(child);
+				}
+			}
+		};
+		
+		await scanFolder(this.currentSessionFolder);
+		return pageMap;
+	}
+
+	/**
+	 * Obtiene los archivos de imagen de una carpeta.
+	 * 
+	 * @private
+	 * @param {import('obsidian').TFolder} folder - Carpeta a escanear
+	 * @returns {Promise<import('obsidian').TFile[]>} Array de archivos de imagen
+	 */
+	async _getImageFiles(folder) {
+		const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+		const imageFiles = [];
+		
+		for (const child of folder.children || []) {
+			if (child instanceof TFile) {
+				const ext = child.extension.toLowerCase();
+				if (imageExtensions.includes(ext)) {
+					imageFiles.push(child);
+				}
+			}
+		}
+		
+		return imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+	}
+
+	/**
 	 * Obtiene los archivos de imagen de una carpeta y retorna información para el renderer.
 	 * 
 	 * @private
@@ -682,8 +754,6 @@ export class PluginController {
 				const folder = this.app.vault.getAbstractFileByPath(data.sessionFolderPath);
 				if (folder && folder instanceof TFolder) {
 					this.currentSessionFolder = folder;
-					// Construir pageMap al cargar la sesión
-					await this._buildPageMap(this.currentSessionFolder);
 				}
 			}
 			
@@ -707,54 +777,6 @@ export class PluginController {
 			serverEnabled: this.serverManager?.isRunning() || false,
 			publicUrl: this.tunnelManager?.getPublicUrl() || this.publicUrl || null
 		});
-	}
-	
-	/**
-	 * Construye el mapeo de nombres de archivo a IDs para mentions.
-	 * Escanea recursivamente todos los archivos markdown en la carpeta de sesión.
-	 * 
-	 * @private
-	 * @param {import('obsidian').TFolder} folder - Carpeta a escanear
-	 * @returns {Promise<void>}
-	 */
-	async _buildPageMap(folder) {
-		this.pageMap = new Map();
-		
-		const buildMap = async (currentFolder) => {
-			for (const child of currentFolder.children || []) {
-				if (child instanceof TFile && child.extension === 'md') {
-					const pageName = child.basename;
-					const pageId = generatePageId();
-					
-					// Guardar por basename (sin extensión) para resolución de wiki links
-					this.pageMap.set(child.basename.toLowerCase(), { 
-						id: pageId, 
-						name: pageName,
-						path: child.path
-					});
-				} else if (child instanceof TFolder) {
-					// También registrar carpetas de imágenes como páginas
-					const imageFiles = await this._getImageFilesFromFolder(child);
-					const hasOnlyImages = imageFiles.length > 0 && 
-						child.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
-						child.children.filter(c => c.children !== undefined).length === 0;
-					
-					if (hasOnlyImages) {
-						const pageId = generatePageId();
-						this.pageMap.set(child.name.toLowerCase(), {
-							id: pageId,
-							name: child.name,
-							path: child.path
-						});
-					}
-					
-					// Recursión para subcarpetas
-					await buildMap(child);
-				}
-			}
-		};
-		
-		await buildMap(folder);
 	}
 }
 
