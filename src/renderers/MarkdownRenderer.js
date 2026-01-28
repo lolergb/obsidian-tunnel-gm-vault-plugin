@@ -17,10 +17,14 @@ export class MarkdownRenderer {
 	 * Crea una instancia de MarkdownRenderer.
 	 * 
 	 * @param {string|null} baseUrl - URL base para convertir URLs relativas a absolutas
+	 * @param {Map<string, {id: string, name: string, path?: string}>|null} pageMap - Mapeo de nombres de página a IDs (opcional)
 	 */
-	constructor(baseUrl = null) {
+	constructor(baseUrl = null, pageMap = null) {
 		/** @type {string|null} */
 		this.baseUrl = baseUrl;
+		
+		/** @type {Map<string, {id: string, name: string, path?: string}>|null} */
+		this.pageMap = pageMap;
 		
 		/** @type {MarkdownIt} */
 		this.md = new MarkdownIt({
@@ -47,15 +51,19 @@ export class MarkdownRenderer {
 	 * 
 	 * @param {string} markdown - Contenido Markdown a renderizar
 	 * @param {string|null} baseUrl - URL base para los wiki links (opcional, usa this.baseUrl si no se proporciona)
+	 * @param {Map<string, {id: string, name: string, path?: string}>|null} pageMap - Mapeo de páginas para mentions (opcional)
 	 * @returns {string} HTML renderizado
 	 */
-	render(markdown, baseUrl = null) {
+	render(markdown, baseUrl = null, pageMap = null) {
+		// Usar el pageMap proporcionado o el de la instancia
+		const map = pageMap || this.pageMap;
+		
 		// Procesar wiki links antes del renderizado (pero no en bloques de código)
 		const urlBase = baseUrl || this.baseUrl;
-		const processedMarkdown = this._convertWikiLinksInMarkdown(markdown, urlBase);
+		const processedMarkdown = this._convertWikiLinksInMarkdown(markdown, urlBase, map);
 		let html = this.md.render(processedMarkdown);
 		// También procesar después del renderizado por si algunos se escaparon
-		html = this._convertWikiLinksInHTML(html, urlBase);
+		html = this._convertWikiLinksInHTML(html, urlBase, map);
 		return html;
 	}
 
@@ -65,12 +73,15 @@ export class MarkdownRenderer {
 	 * @param {string} markdown - Contenido Markdown
 	 * @param {string} title - Título de la página
 	 * @param {string|null} baseUrl - URL base para convertir URLs relativas (opcional, usa this.baseUrl si no se proporciona)
+	 * @param {Map<string, {id: string, name: string, path?: string}>|null} pageMap - Mapeo de páginas para mentions (opcional)
 	 * @returns {string} HTML completo de la página
 	 */
-	renderPage(markdown, title, baseUrl = null) {
+	renderPage(markdown, title, baseUrl = null, pageMap = null) {
 		// Usar el baseUrl proporcionado o el de la instancia
 		const urlBase = baseUrl || this.baseUrl;
-		let content = this.render(markdown, urlBase);
+		// Usar el pageMap proporcionado o el de la instancia
+		const map = pageMap || this.pageMap;
+		let content = this.render(markdown, urlBase, map);
 		
 		// Convertir URLs relativas a absolutas si hay una URL base
 		if (urlBase) {
@@ -238,15 +249,21 @@ export class MarkdownRenderer {
 	}
 
 	/**
-	 * Convierte wiki links [[nombre]] a enlaces markdown antes del renderizado.
+	 * Convierte wiki links [[nombre]] a enlaces markdown o los deja sin procesar si hay pageMap.
 	 * Evita procesar wiki links dentro de bloques de código (tanto bloques como inline).
+	 * Si hay pageMap, los wiki links se procesarán después del renderizado como mentions.
 	 * 
 	 * @private
 	 * @param {string} markdown - Markdown con wiki links sin procesar
 	 * @param {string|null} baseUrl - URL base para los enlaces (opcional)
-	 * @returns {string} Markdown con wiki links convertidos a enlaces markdown
+	 * @param {Map<string, {id: string, name: string, path?: string}>|null} pageMap - Mapeo de páginas (opcional)
+	 * @returns {string} Markdown con wiki links convertidos a enlaces markdown o sin procesar
 	 */
-	_convertWikiLinksInMarkdown(markdown, baseUrl = null) {
+	_convertWikiLinksInMarkdown(markdown, baseUrl = null, pageMap = null) {
+		// Si hay pageMap, no procesar aquí - se procesarán después como mentions
+		if (pageMap) {
+			return markdown;
+		}
 		// Dividir el markdown en partes: bloques de código y texto normal
 		const parts = [];
 		let lastIndex = 0;
@@ -310,15 +327,16 @@ export class MarkdownRenderer {
 
 	/**
 	 * Convierte wiki links [[nombre]] que quedaron en el HTML después del renderizado.
-	 * Esto captura los casos donde markdown-it escapó los corchetes.
+	 * Si hay pageMap, crea mentions de Notion. Si no, crea enlaces HTML.
 	 * Evita procesar wiki links que ya están dentro de enlaces HTML.
 	 * 
 	 * @private
 	 * @param {string} html - HTML renderizado que puede contener wiki links escapados
 	 * @param {string|null} baseUrl - URL base para los enlaces (opcional)
-	 * @returns {string} HTML con wiki links convertidos a enlaces
+	 * @param {Map<string, {id: string, name: string, path?: string}>|null} pageMap - Mapeo de páginas para mentions (opcional)
+	 * @returns {string} HTML con wiki links convertidos a mentions o enlaces
 	 */
-	_convertWikiLinksInHTML(html, baseUrl = null) {
+	_convertWikiLinksInHTML(html, baseUrl = null, pageMap = null) {
 		// Dividir el HTML en partes: dentro de enlaces y fuera de enlaces
 		const parts = [];
 		let lastIndex = 0;
@@ -370,7 +388,36 @@ export class MarkdownRenderer {
 					const linkPath = parts[0].trim();
 					const displayName = (parts[1] || parts[0]).trim();
 					
-					// Convierte a slug para la URL
+					// Si hay pageMap, crear mention de Notion
+					if (pageMap) {
+						const pageInfo = pageMap.get(linkPath.toLowerCase());
+						
+						if (pageInfo) {
+							// Página encontrada: crear mention clickeable
+							const urlBase = baseUrl || this.baseUrl;
+							const mentionUrl = urlBase 
+								? `${urlBase}/pages/${this._slugify(linkPath)}`
+								: `/pages/${this._slugify(linkPath)}`;
+							
+							return `<span 
+								class="notion-mention notion-mention--link" 
+								data-mention-page-id="${pageInfo.id}"
+								data-mention-page-name="${this._escapeHtml(pageInfo.name)}"
+								data-mention-page-url="${this._escapeHtml(mentionUrl)}"
+								role="button"
+								tabindex="0"
+								aria-label="Open ${this._escapeHtml(pageInfo.name)}"
+							>${this._escapeHtml(displayName)}</span>`;
+						} else {
+							// Página no encontrada: renderizar como mention plain
+							return `<span 
+								class="notion-mention notion-mention--plain" 
+								data-mention-page-name="${this._escapeHtml(linkPath)}"
+							>${this._escapeHtml(displayName)}</span>`;
+						}
+					}
+					
+					// Sin pageMap: crear enlace HTML normal
 					const slug = this._slugify(linkPath);
 					const urlBase = baseUrl || this.baseUrl;
 					const href = urlBase 
