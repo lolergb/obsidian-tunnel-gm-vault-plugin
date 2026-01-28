@@ -54,6 +54,8 @@ export class MarkdownRenderer {
 		const urlBase = baseUrl || this.baseUrl;
 		const processedMarkdown = this._convertWikiLinksInMarkdown(markdown, urlBase);
 		let html = this.md.render(processedMarkdown);
+		// También procesar después del renderizado por si algunos se escaparon
+		html = this._convertWikiLinksInHTML(html, urlBase);
 		return html;
 	}
 
@@ -283,7 +285,8 @@ export class MarkdownRenderer {
 			}
 			
 			// Buscar wiki links: [[nombre]] o [[nombre|display]]
-			const wikiLinkRegex = /\[\[([^\]]+)\]\]/g;
+			// Usar una regex más robusta que capture todo entre los corchetes
+			const wikiLinkRegex = /\[\[([^\]]+?)\]\]/g;
 			
 			return part.text.replace(wikiLinkRegex, (match, linkContent) => {
 				// Separar path y display name
@@ -301,6 +304,86 @@ export class MarkdownRenderer {
 				// Convertir a enlace markdown estándar
 				return `[${displayName}](${href})`;
 			});
+		});
+		
+		return processedParts.join('');
+	}
+
+	/**
+	 * Convierte wiki links [[nombre]] que quedaron en el HTML después del renderizado.
+	 * Esto captura los casos donde markdown-it escapó los corchetes.
+	 * Evita procesar wiki links que ya están dentro de enlaces HTML.
+	 * 
+	 * @private
+	 * @param {string} html - HTML renderizado que puede contener wiki links escapados
+	 * @param {string|null} baseUrl - URL base para los enlaces (opcional)
+	 * @returns {string} HTML con wiki links convertidos a enlaces
+	 */
+	_convertWikiLinksInHTML(html, baseUrl = null) {
+		// Dividir el HTML en partes: dentro de enlaces y fuera de enlaces
+		const parts = [];
+		let lastIndex = 0;
+		
+		// Buscar enlaces HTML existentes para no procesar wiki links dentro de ellos
+		const linkRegex = /<a\s+[^>]*>[\s\S]*?<\/a>/gi;
+		let match;
+		
+		while ((match = linkRegex.exec(html)) !== null) {
+			// Procesar texto antes del enlace
+			if (match.index > lastIndex) {
+				const beforeLink = html.substring(lastIndex, match.index);
+				parts.push({ text: beforeLink, isLink: false });
+			}
+			// Guardar el enlace sin procesar
+			parts.push({ text: match[0], isLink: true });
+			lastIndex = match.index + match[0].length;
+		}
+		
+		// Procesar el resto del texto
+		if (lastIndex < html.length) {
+			parts.push({ text: html.substring(lastIndex), isLink: false });
+		}
+		
+		// Si no hay enlaces, procesar todo el texto
+		if (parts.length === 0) {
+			parts.push({ text: html, isLink: false });
+		}
+		
+		// Procesar solo las partes que no son enlaces
+		const processedParts = parts.map(part => {
+			if (part.isLink) {
+				return part.text;
+			}
+			
+			// Buscar wiki links que puedan haber sido escapados
+			// Patrón 1: [[nombre]] normal (por si no se procesó antes)
+			// Patrón 2: &lt;&lt;nombre&gt;&gt; (si fueron escapados como HTML entities)
+			const wikiLinkPatterns = [
+				/\[\[([^\]]+?)\]\]/g,  // [[nombre]] normal
+				/&lt;&lt;([^&]+?)&gt;&gt;/g  // &lt;&lt;nombre&gt;&gt; escapado
+			];
+			
+			let processedText = part.text;
+			for (const pattern of wikiLinkPatterns) {
+				processedText = processedText.replace(pattern, (match, linkContent) => {
+					// Separar path y display name
+					const parts = linkContent.split('|');
+					const linkPath = parts[0].trim();
+					const displayName = (parts[1] || parts[0]).trim();
+					
+					// Convierte a slug para la URL
+					const slug = this._slugify(linkPath);
+					const urlBase = baseUrl || this.baseUrl;
+					const href = urlBase 
+						? `${urlBase}/pages/${slug}`
+						: `/pages/${slug}`;
+					
+					// Convertir a enlace HTML
+					return `<a href="${href}" class="notion-text-link">${this._escapeHtml(displayName)}</a>`;
+				});
+			}
+			
+			return processedText;
 		});
 		
 		return processedParts.join('');
