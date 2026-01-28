@@ -73,7 +73,6 @@ export class MarkdownRenderer {
 		let content = this.render(markdown, urlBase);
 		
 		// Convertir URLs relativas a absolutas si hay una URL base
-		const urlBase = baseUrl || this.baseUrl;
 		if (urlBase) {
 			content = this._convertRelativeUrlsToAbsolute(content, urlBase);
 		}
