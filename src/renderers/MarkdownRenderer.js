@@ -121,17 +121,191 @@ export class MarkdownRenderer {
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>${this._escapeHtml(title)}</title>
+	<style>
+		.mention-modal-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: rgba(0, 0, 0, 0.5);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			z-index: 10000;
+			opacity: 0;
+			transition: opacity 0.2s ease;
+		}
+		.mention-modal-overlay--visible {
+			opacity: 1;
+		}
+		.mention-modal-overlay--closing {
+			opacity: 0;
+		}
+		.mention-modal {
+			background: white;
+			border-radius: 8px;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+			max-width: 90vw;
+			max-height: 90vh;
+			width: 800px;
+			display: flex;
+			flex-direction: column;
+			transform: scale(0.95);
+			transition: transform 0.2s ease;
+		}
+		.mention-modal--visible {
+			transform: scale(1);
+		}
+		.mention-modal--closing {
+			transform: scale(0.95);
+		}
+		.mention-modal__header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 16px 20px;
+			border-bottom: 1px solid #e5e5e5;
+		}
+		.mention-modal__title {
+			margin: 0;
+			font-size: 18px;
+			font-weight: 600;
+			color: #333;
+		}
+		.mention-modal__close {
+			background: none;
+			border: none;
+			font-size: 24px;
+			cursor: pointer;
+			color: #666;
+			padding: 0;
+			width: 32px;
+			height: 32px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 4px;
+		}
+		.mention-modal__close:hover {
+			background-color: #f0f0f0;
+			color: #333;
+		}
+		.mention-modal__content {
+			flex: 1;
+			overflow: auto;
+			padding: 0;
+		}
+		.mention-modal__content iframe {
+			width: 100%;
+			height: 100%;
+			border: none;
+			min-height: 500px;
+		}
+		.mention-modal__loading {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			padding: 40px;
+			color: #666;
+		}
+		.mention-modal__loading-icon {
+			font-size: 32px;
+			margin-bottom: 16px;
+		}
+	</style>
 </head>
 <body>
 	<div id="notion-content">
 		${content}
 	</div>
 	<script>
-		// Manejar clics en mentions de Notion
+		// Manejar clics en mentions de Notion - abrir en modal
 		(function() {
+			function openMentionModal(pageUrl, pageName) {
+				// Crear overlay
+				const overlay = document.createElement('div');
+				overlay.className = 'mention-modal-overlay';
+				overlay.setAttribute('aria-modal', 'true');
+				overlay.setAttribute('role', 'dialog');
+				overlay.setAttribute('aria-label', 'Page: ' + pageName);
+				
+				// Crear modal
+				const modal = document.createElement('div');
+				modal.className = 'mention-modal';
+				
+				// Header
+				const header = document.createElement('div');
+				header.className = 'mention-modal__header';
+				
+				const title = document.createElement('h2');
+				title.className = 'mention-modal__title';
+				title.textContent = pageName;
+				
+				const closeBtn = document.createElement('button');
+				closeBtn.className = 'mention-modal__close';
+				closeBtn.innerHTML = '&times;';
+				closeBtn.setAttribute('aria-label', 'Close modal');
+				
+				header.appendChild(title);
+				header.appendChild(closeBtn);
+				
+				// Contenido - inicialmente loading
+				const content = document.createElement('div');
+				content.className = 'mention-modal__content';
+				content.innerHTML = '<div class="mention-modal__loading"><div class="mention-modal__loading-icon">⏳</div><p>Loading page...</p></div>';
+				
+				// Cargar contenido en iframe
+				const iframe = document.createElement('iframe');
+				iframe.src = pageUrl + '?modal=true';
+				iframe.onload = function() {
+					content.innerHTML = '';
+					content.appendChild(iframe);
+				};
+				iframe.onerror = function() {
+					content.innerHTML = '<div class="mention-modal__loading"><p>Error loading page</p></div>';
+				};
+				
+				modal.appendChild(header);
+				modal.appendChild(content);
+				overlay.appendChild(modal);
+				document.body.appendChild(overlay);
+				
+				// Funciones de cierre
+				const closeModal = function() {
+					overlay.classList.add('mention-modal-overlay--closing');
+					modal.classList.add('mention-modal--closing');
+					setTimeout(function() {
+						overlay.remove();
+					}, 200);
+				};
+				
+				closeBtn.addEventListener('click', closeModal);
+				overlay.addEventListener('click', function(e) {
+					if (e.target === overlay) closeModal();
+				});
+				
+				const handleEscape = function(e) {
+					if (e.key === 'Escape') {
+						closeModal();
+						document.removeEventListener('keydown', handleEscape);
+					}
+				};
+				document.addEventListener('keydown', handleEscape);
+				
+				// Animación de entrada
+				requestAnimationFrame(function() {
+					overlay.classList.add('mention-modal-overlay--visible');
+					modal.classList.add('mention-modal--visible');
+				});
+				
+				closeBtn.focus();
+			}
+			
 			const mentions = document.querySelectorAll('.notion-mention--link');
 			
-			mentions.forEach(mention => {
+			mentions.forEach(function(mention) {
 				if (mention.dataset.listenerAdded) return;
 				mention.dataset.listenerAdded = 'true';
 				
@@ -141,8 +315,9 @@ export class MarkdownRenderer {
 					e.stopPropagation();
 					
 					const pageUrl = this.dataset.mentionPageUrl;
+					const pageName = this.dataset.mentionPageName || 'Page';
 					if (pageUrl) {
-						window.location.href = pageUrl;
+						openMentionModal(pageUrl, pageName);
 					}
 				});
 				
@@ -153,8 +328,9 @@ export class MarkdownRenderer {
 						e.stopPropagation();
 						
 						const pageUrl = this.dataset.mentionPageUrl;
+						const pageName = this.dataset.mentionPageName || 'Page';
 						if (pageUrl) {
-							window.location.href = pageUrl;
+							openMentionModal(pageUrl, pageName);
 						}
 					}
 				});
