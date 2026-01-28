@@ -122,97 +122,449 @@ export class MarkdownRenderer {
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>${this._escapeHtml(title)}</title>
 	<style>
-		.mention-modal-overlay {
-			position: fixed;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background-color: rgba(0, 0, 0, 0.5);
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			z-index: 10000;
-			opacity: 0;
-			transition: opacity 0.2s ease;
+		/* ==========================================================================
+		   Variables CSS (de GM Vault app.css)
+		   ========================================================================== */
+		:root {
+			/* Backgrounds */
+			--color-bg-primary: rgba(0, 0, 0, 0.24);
+			--color-bg-hover: rgba(0, 0, 0, 0.24);
+			--color-bg-active: rgba(187, 153, 255, 0.12);
+			--color-bg-overlay: rgba(34, 38, 57, 0.8);
+			--color-bg-surface: rgb(34, 38, 57);
+			
+			/* Borders */
+			--color-border-primary: rgba(0, 0, 0, 0);
+			--color-border-active: rgba(187, 153, 255, 0.32);
+			--color-border-subtle: rgba(255, 255, 255, 0.1);
+			
+			/* Text */
+			--color-text-primary: #fff;
+			--color-text-secondary: #e0e0e0;
+			--color-text-muted: #999;
+			--color-text-hint: #888;
+			--color-text-disabled: #777;
+			
+			/* Accent */
+			--color-accent-primary: #967ACC;
+			--color-accent-primary-hover: #603EA2;
+			--color-accent-link: #967ACC;
+			
+			/* Error */
+			--color-error-bg: #4a2d2d;
+			--color-error-border: #6a4040;
+			--color-error-text: #ff6b6b;
+			
+			/* Spacing */
+			--spacing-xs: 4px;
+			--spacing-sm: 8px;
+			--spacing-md: 12px;
+			--spacing-lg: 16px;
+			--spacing-xl: 24px;
+			
+			/* Border radius */
+			--radius-sm: 4px;
+			--radius-md: 6px;
+			--radius-lg: 8px;
+			--radius-full: 50%;
+			
+			/* Transitions */
+			--transition-fast: 0.15s ease;
+			--transition-normal: 0.2s ease;
+			--transition-slow: 0.3s ease;
+			
+			/* Typography */
+			--font-family-base: Roboto, Helvetica, Arial, sans-serif;
+			--font-family-mono: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+			--font-size-xs: 12px;
+			--font-size-sm: 14px;
+			--font-size-base: 16px;
+			--font-size-md: 18px;
+			--font-size-lg: 20px;
+			--font-size-xl: 24px;
+			--font-weight-normal: 400;
+			--font-weight-medium: 500;
+			--font-weight-bold: 700;
+			
+			/* Icons */
+			--icon-size-lg: 28px;
+			
+			/* Images */
+			--max-height-image-container: 300px;
+			--min-height-image-container: 100px;
 		}
-		.mention-modal-overlay--visible {
-			opacity: 1;
+		
+		/* ==========================================================================
+		   Base styles
+		   ========================================================================== */
+		* {
+			box-sizing: border-box;
 		}
-		.mention-modal-overlay--closing {
-			opacity: 0;
-		}
-		.mention-modal {
-			background: white;
-			border-radius: 8px;
-			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-			max-width: 90vw;
-			max-height: 90vh;
-			width: 800px;
-			display: flex;
-			flex-direction: column;
-			transform: scale(0.95);
-			transition: transform 0.2s ease;
-		}
-		.mention-modal--visible {
-			transform: scale(1);
-		}
-		.mention-modal--closing {
-			transform: scale(0.95);
-		}
-		.mention-modal__header {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			padding: 16px 20px;
-			border-bottom: 1px solid #e5e5e5;
-		}
-		.mention-modal__title {
+		
+		body {
 			margin: 0;
-			font-size: 18px;
-			font-weight: 600;
-			color: #333;
-		}
-		.mention-modal__close {
-			background: none;
-			border: none;
-			font-size: 24px;
-			cursor: pointer;
-			color: #666;
 			padding: 0;
-			width: 32px;
-			height: 32px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			border-radius: 4px;
+			background: var(--color-bg-surface);
+			font-family: var(--font-family-base);
+			font-size: var(--font-size-base);
+			color: var(--color-text-secondary);
 		}
-		.mention-modal__close:hover {
-			background-color: #f0f0f0;
-			color: #333;
+		
+		/* ==========================================================================
+		   Notion Content Styles (de notion-markdown.css)
+		   ========================================================================== */
+		.notion-content {
+			padding: 0 var(--spacing-xl) var(--spacing-xl);
+			max-width: 800px;
+			margin: 0 auto;
+			color: var(--color-text-primary);
+			line-height: 1.6;
+			font-family: var(--font-family-base);
+			transition: max-width 0.3s ease;
 		}
-		.mention-modal__content {
-			flex: 1;
-			overflow: auto;
-			padding: 0;
+		
+		/* Cover de página de Notion */
+		.notion-page-cover {
+			width: calc(100% + var(--spacing-xl)*2);
+			max-width: calc(100% + var(--spacing-xl)*2);
+			min-height: var(--max-height-image-container);
+			margin: calc(var(--spacing-xl) * -1) calc(var(--spacing-xl) * -1) var(--spacing-xl);
+			margin-top: calc(var(--spacing-xl) * -1);
+			overflow: hidden;
+			border-radius: 0;
+			position: relative;
 		}
-		.mention-modal__content iframe {
+		
+		.notion-page-cover .notion-image-container {
+			position: relative;
 			width: 100%;
-			height: 100%;
-			border: none;
-			min-height: 500px;
-		}
-		.mention-modal__loading {
+			min-height: var(--max-height-image-container);
 			display: flex;
-			flex-direction: column;
 			align-items: center;
 			justify-content: center;
-			padding: 40px;
-			color: #666;
 		}
-		.mention-modal__loading-icon {
-			font-size: 32px;
-			margin-bottom: 16px;
+		
+		.notion-page-cover .notion-image-container img,
+		.notion-cover-image {
+			width: 100%;
+			height: auto;
+			display: block;
+			object-fit: cover;
+			object-position: center center;
+			max-height: var(--max-height-image-container);
+			cursor: pointer;
+			opacity: 1 !important;
+			transition: opacity 0.2s ease;
+			margin: 0 auto;
+		}
+		
+		.notion-cover-image:hover {
+			opacity: 0.9 !important;
+		}
+		
+		/* Título de página de Notion (después del cover) */
+		.notion-page-title {
+			font-size: calc(var(--font-size-xl) * 1.6);
+			font-weight: var(--font-weight-bold);
+			margin-top: var(--spacing-xl);
+			margin-bottom: var(--spacing-md);
+			line-height: 1.2;
+			color: var(--color-text-primary);
+			padding: 0;
+		}
+		
+		/* Ajustar padding del contenido cuando hay cover */
+		.notion-content:has(.notion-page-cover) {
+			padding-top: var(--spacing-xl);
+		}
+		
+		.notion-content h1 {
+			font-size: calc(var(--font-size-xl) * 1.4);
+			font-weight: var(--font-weight-bold);
+			margin-top: var(--spacing-xl);
+			margin-bottom: var(--spacing-md);
+			line-height: 1.2;
+		}
+		
+		.notion-content h2 {
+			font-size: var(--font-size-xl);
+			font-weight: var(--font-weight-bold);
+			margin-top: calc(var(--spacing-xl) * 1.4);
+			margin-bottom: var(--spacing-md);
+			line-height: var(--icon-size-lg);
+			font-family: var(--font-family-base);
+		}
+		
+		.notion-content h3 {
+			font-size: var(--font-size-lg);
+			font-weight: var(--font-weight-medium);
+			margin-top: var(--spacing-xl);
+			margin-bottom: var(--spacing-md);
+			line-height: 1.3;
+		}
+		
+		.notion-content p {
+			margin-top: calc(var(--font-size-base) * 0.5);
+			margin-bottom: calc(var(--font-size-base) * 0.5);
+			white-space: pre-wrap;
+			word-break: break-word;
+		}
+		
+		.notion-content .notion-text {
+			color: var(--color-text-primary);
+		}
+		
+		.notion-content .notion-text-bold {
+			font-weight: var(--font-weight-medium);
+		}
+		
+		.notion-content .notion-text-italic {
+			font-style: italic;
+		}
+		
+		.notion-content .notion-text-underline {
+			text-decoration: underline;
+		}
+		
+		.notion-content .notion-text-strikethrough {
+			text-decoration: line-through;
+		}
+		
+		.notion-content .notion-text-code {
+			background: rgba(135, 131, 120, 0.15);
+			color: var(--color-error-text);
+			border-radius: var(--radius-sm);
+			padding: calc(var(--font-size-base) * 0.2) calc(var(--font-size-base) * 0.4);
+			font-size: 85%;
+			font-family: var(--font-family-mono);
+		}
+		
+		.notion-content .notion-text-link,
+		.notion-content a {
+			color: var(--color-accent-link);
+			text-decoration: underline;
+			text-decoration-color: var(--color-text-muted);
+			transition: background-color var(--transition-fast);
+		}
+		
+		.notion-content .notion-text-link:hover,
+		.notion-content a:hover {
+			background-color: var(--color-bg-hover);
+		}
+		
+		.notion-content .notion-image {
+			width: 100%;
+			max-width: 100%;
+			margin: var(--font-size-base) 0;
+			border-radius: var(--radius-sm);
+			display: block;
+			position: relative;
+		}
+		
+		.notion-content .notion-image-container {
+			position: relative;
+			width: 100%;
+			display: inline-block;
+			max-width: 100%;
+			min-height: var(--min-height-image-container);
+		}
+		
+		.notion-content .notion-image img,
+		.notion-content img {
+			width: 100%;
+			height: auto;
+			border-radius: var(--radius-sm);
+			transition: opacity var(--transition-normal);
+		}
+		
+		.notion-content .notion-image-clickable {
+			cursor: pointer;
+		}
+		
+		.notion-content .notion-image-clickable:hover {
+			opacity: 0.9;
+		}
+		
+		.notion-content .notion-image-caption {
+			font-size: var(--font-size-base);
+			color: var(--color-text-muted);
+			text-align: center;
+			margin-top: var(--spacing-xs);
+		}
+		
+		.notion-content .notion-bulleted-list,
+		.notion-content .notion-numbered-list,
+		.notion-content ul,
+		.notion-content ol {
+			margin: var(--spacing-xs) 0;
+			padding-left: calc(var(--spacing-lg) + var(--spacing-md));
+		}
+		
+		.notion-content .notion-bulleted-list-item,
+		.notion-content .notion-numbered-list-item,
+		.notion-content li {
+			margin: var(--spacing-xs) 0;
+			padding-left: var(--radius-sm);
+		}
+		
+		.notion-content .notion-bulleted-list-item::marker,
+		.notion-content .notion-numbered-list-item::marker,
+		.notion-content li::marker {
+			color: var(--color-text-primary);
+		}
+		
+		.notion-content .notion-callout,
+		.notion-content blockquote {
+			padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+			margin: var(--spacing-lg) 0;
+			border-radius: var(--radius-sm);
+			background: var(--color-bg-primary);
+			border-left: 3px solid var(--color-border-subtle);
+			display: flex;
+			flex-direction: row;
+			gap: var(--spacing-md);
+		}
+		
+		.notion-content .notion-callout-icon {
+			font-size: calc(var(--font-size-base) * 1.5);
+			line-height: 1;
+		}
+		
+		.notion-content .notion-callout-content {
+			flex: 1;
+		}
+		
+		.notion-content .notion-divider,
+		.notion-content hr {
+			border: none;
+			border-top: 1px solid var(--color-border-subtle);
+			margin: calc(var(--spacing-sm) - var(--spacing-xs)) 0;
+		}
+		
+		.notion-content .notion-code,
+		.notion-content pre {
+			background: rgba(135, 131, 120, 0.15);
+			border-radius: var(--radius-sm);
+			padding: var(--font-size-base);
+			margin: var(--font-size-base) 0;
+			overflow-x: auto;
+			font-family: var(--font-family-mono);
+			font-size: 85%;
+			line-height: 1.5;
+		}
+		
+		.notion-content .notion-code code,
+		.notion-content pre code,
+		.notion-content code {
+			color: var(--color-text-primary);
+			white-space: pre;
+			font-family: var(--font-family-mono);
+		}
+		
+		/* Inline code */
+		.notion-content p code,
+		.notion-content li code {
+			background: rgba(135, 131, 120, 0.15);
+			color: var(--color-error-text);
+			border-radius: var(--radius-sm);
+			padding: calc(var(--font-size-base) * 0.2) calc(var(--font-size-base) * 0.4);
+			font-size: 85%;
+			white-space: normal;
+		}
+		
+		.notion-content .notion-table,
+		.notion-content table {
+			width: 100%;
+			margin: var(--font-size-base) 0;
+			border-collapse: collapse;
+			border: 1px solid var(--color-border-subtle);
+		}
+		
+		.notion-content .notion-table th,
+		.notion-content .notion-table td,
+		.notion-content table th,
+		.notion-content table td {
+			padding: var(--spacing-sm) var(--spacing-md);
+			border: 1px solid var(--color-border-subtle);
+			text-align: left;
+		}
+		
+		.notion-content .notion-table th,
+		.notion-content table th {
+			background: var(--color-bg-primary);
+			font-weight: var(--font-weight-medium);
+		}
+		
+		.notion-content .notion-table tr:nth-child(even),
+		.notion-content table tr:nth-child(even) {
+			background: var(--color-bg-hover);
+		}
+		
+		.notion-content .notion-quote {
+			border-left: 3px solid var(--color-border-subtle);
+			padding-left: calc(var(--spacing-md) + var(--spacing-xs));
+			margin: calc(var(--spacing-sm) - var(--spacing-xs)) 0;
+			color: var(--color-text-muted);
+		}
+		
+		.notion-content .notion-toggle {
+			margin: var(--spacing-xs) 0;
+		}
+		
+		.notion-content .notion-toggle-summary {
+			cursor: pointer;
+			user-select: none;
+			padding: var(--radius-sm) 2px;
+			margin-left: 1px;
+		}
+		
+		.notion-content .notion-toggle-content {
+			margin-left: calc(var(--spacing-lg) + var(--spacing-md));
+			margin-top: 2px;
+		}
+		
+		/* ==========================================================================
+		   Mention Styles
+		   ========================================================================== */
+		.notion-mention {
+			display: inline-flex;
+			align-items: center;
+			background: var(--color-bg-primary);
+			border-radius: var(--radius-sm);
+			padding: 2px 6px;
+			margin: 0 2px;
+			cursor: pointer;
+			transition: background-color var(--transition-fast);
+		}
+		
+		.notion-mention:hover {
+			background: var(--color-bg-hover);
+		}
+		
+		.notion-mention--link {
+			color: var(--color-accent-link);
+			text-decoration: none;
+		}
+		
+		/* ==========================================================================
+		   Tag Styles
+		   ========================================================================== */
+		.notion-tag {
+			display: inline-block;
+			background: var(--color-bg-primary);
+			color: var(--color-text-secondary);
+			padding: 2px 8px;
+			border-radius: var(--radius-sm);
+			font-size: var(--font-size-sm);
+			margin: 2px;
+		}
+		
+		/* ==========================================================================
+		   Animations
+		   ========================================================================== */
+		@keyframes pulse {
+			0%, 100% { opacity: 1; }
+			50% { opacity: 0.5; }
 		}
 	</style>
 </head>
