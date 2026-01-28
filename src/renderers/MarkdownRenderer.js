@@ -126,36 +126,37 @@ export class MarkdownRenderer {
 		   Variables CSS (de GM Vault app.css)
 		   ========================================================================== */
 		:root {
-			/* Backgrounds */
+			/* Colores de fondo */
 			--color-bg-primary: rgba(0, 0, 0, 0.24);
 			--color-bg-hover: rgba(0, 0, 0, 0.24);
 			--color-bg-active: rgba(187, 153, 255, 0.12);
 			--color-bg-overlay: rgba(34, 38, 57, 0.8);
 			--color-bg-surface: rgb(34, 38, 57);
 			
-			/* Borders */
+			/* Colores de borde */
 			--color-border-primary: rgba(0, 0, 0, 0);
 			--color-border-active: rgba(187, 153, 255, 0.32);
 			--color-border-subtle: rgba(255, 255, 255, 0.1);
 			
-			/* Text */
+			/* Colores de texto */
 			--color-text-primary: #fff;
 			--color-text-secondary: #e0e0e0;
 			--color-text-muted: #999;
 			--color-text-hint: #888;
 			--color-text-disabled: #777;
 			
-			/* Accent */
+			/* Colores de acento */
 			--color-accent-primary: #967ACC;
 			--color-accent-primary-hover: #603EA2;
+			--color-accent-secondary: #b8a0e0;
 			--color-accent-link: #967ACC;
 			
-			/* Error */
+			/* Colores de error */
 			--color-error-bg: #4a2d2d;
 			--color-error-border: #6a4040;
 			--color-error-text: #ff6b6b;
 			
-			/* Spacing */
+			/* Espaciado */
 			--spacing-xs: 4px;
 			--spacing-sm: 8px;
 			--spacing-md: 12px;
@@ -168,12 +169,12 @@ export class MarkdownRenderer {
 			--radius-lg: 8px;
 			--radius-full: 50%;
 			
-			/* Transitions */
+			/* Transiciones */
 			--transition-fast: 0.15s ease;
 			--transition-normal: 0.2s ease;
 			--transition-slow: 0.3s ease;
 			
-			/* Typography */
+			/* Tipografía */
 			--font-family-base: Roboto, Helvetica, Arial, sans-serif;
 			--font-family-mono: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 			--font-size-xs: 12px;
@@ -182,32 +183,65 @@ export class MarkdownRenderer {
 			--font-size-md: 18px;
 			--font-size-lg: 20px;
 			--font-size-xl: 24px;
+			--font-line-xs: 20px;
+			--font-line-sm: 20px;
+			--font-line-base: 24px;
+			--font-line-md: 24px;
+			--font-line-lg: 28px;
+			--font-line-xl: 32px;
 			--font-weight-normal: 400;
 			--font-weight-medium: 500;
+			--font-weight-semibold: 600;
 			--font-weight-bold: 700;
 			
-			/* Icons */
-			--icon-size-lg: 28px;
+			/* Tamaños de iconos */
+			--icon-size-sm: 16px;
+			--icon-size-md: 20px;
+			--icon-size-lg: 24px;
 			
-			/* Images */
-			--max-height-image-container: 300px;
+			/* Sombras */
+			--shadow-menu: rgba(0, 0, 0, 0.2) 0px 2px 4px -1px, rgba(0, 0, 0, 0.14) 0px 4px 5px 0px, rgba(0, 0, 0, 0.12) 0px 1px 10px 0px;
+			--shadow-card: 0 4px 6px rgba(0, 0, 0, 0.1);
+			
+			/* Alturas de imagen */
 			--min-height-image-container: 100px;
+			--max-height-image-container: 200px;
 		}
 		
 		/* ==========================================================================
-		   Base styles
+		   Reset y base
 		   ========================================================================== */
 		* {
+			margin: 0;
+			padding: 0;
 			box-sizing: border-box;
 		}
 		
+		html {
+			width: 100%;
+			height: 100%;
+			max-width: 100%;
+			overflow-x: hidden;
+		}
+		
 		body {
-			margin: 0;
-			padding: 0;
-			background: var(--color-bg-surface);
 			font-family: var(--font-family-base);
+			font-weight: var(--font-weight-normal);
 			font-size: var(--font-size-base);
 			color: var(--color-text-secondary);
+			padding: var(--spacing-lg);
+			min-height: 100dvh;
+			height: 100dvh;
+			width: 100%;
+			max-width: 100%;
+			margin: 0;
+			display: flex;
+			flex-direction: column;
+			overflow-x: hidden;
+			overflow-y: auto;
+			background-color: transparent;
+			transition: width 0.3s ease;
+			box-sizing: border-box;
 		}
 		
 		/* ==========================================================================
@@ -310,6 +344,20 @@ export class MarkdownRenderer {
 			word-break: break-word;
 		}
 		
+		/* Evitar líneas vacías extra de <br> */
+		.notion-content br {
+			display: block;
+			content: "";
+			margin-top: 0;
+		}
+		
+		/* Evitar doble espaciado con párrafos que solo contienen br */
+		.notion-content p:empty,
+		.notion-content p:has(br:only-child) {
+			margin: 0;
+			min-height: calc(var(--font-size-base) * 0.5);
+		}
+		
 		.notion-content .notion-text {
 			color: var(--color-text-primary);
 		}
@@ -341,7 +389,7 @@ export class MarkdownRenderer {
 		
 		.notion-content .notion-text-link,
 		.notion-content a {
-			color: var(--color-accent-link);
+			color: inherit;
 			text-decoration: underline;
 			text-decoration-color: var(--color-text-muted);
 			transition: background-color var(--transition-fast);
@@ -524,26 +572,71 @@ export class MarkdownRenderer {
 		}
 		
 		/* ==========================================================================
-		   Mention Styles
+		   Notion Mentions (@Page links) - Exacto de app.css
 		   ========================================================================== */
+		
+		/* Base mention style */
 		.notion-mention {
-			display: inline-flex;
-			align-items: center;
-			background: var(--color-bg-primary);
-			border-radius: var(--radius-sm);
-			padding: 2px 6px;
-			margin: 0 2px;
-			cursor: pointer;
-			transition: background-color var(--transition-fast);
+			display: inline;
 		}
 		
-		.notion-mention:hover {
-			background: var(--color-bg-hover);
+		/* Plain text mention (not in vault or not visible) */
+		.notion-mention--plain {
+			/* No special styling - appears as regular text */
 		}
 		
+		/* Clickable mention link */
 		.notion-mention--link {
-			color: var(--color-accent-link);
+			background-color: rgba(150, 122, 204, 0.15);
+			color: var(--color-accent-primary);
+			padding: 1px 4px;
+			border-radius: 3px;
+			cursor: pointer;
+			transition: background-color 0.15s ease, color 0.15s ease;
 			text-decoration: none;
+			font-weight: 500;
+		}
+		
+		.notion-mention--link:hover {
+			background-color: rgba(150, 122, 204, 0.3);
+			color: var(--color-accent-secondary);
+		}
+		
+		.notion-mention--link:focus {
+			outline: 2px solid var(--color-accent-primary);
+			outline-offset: 1px;
+		}
+		
+		/* Loading state */
+		.notion-mention--loading {
+			opacity: 0.6;
+			pointer-events: none;
+			position: relative;
+		}
+		
+		.notion-mention--loading::after {
+			content: '';
+			display: inline-block;
+			width: 10px;
+			height: 10px;
+			margin-left: 4px;
+			border: 2px solid var(--color-accent-primary);
+			border-top-color: transparent;
+			border-radius: 50%;
+			animation: mention-spin 0.8s linear infinite;
+		}
+		
+		@keyframes mention-spin {
+			to { transform: rotate(360deg); }
+		}
+		
+		/* Disabled mention (inside modal - no navigation) */
+		.notion-mention--disabled {
+			background-color: rgba(150, 122, 204, 0.1);
+			color: var(--color-text-secondary);
+			padding: 1px 4px;
+			border-radius: 3px;
+			cursor: default;
 		}
 		
 		/* ==========================================================================
