@@ -569,7 +569,7 @@ export class MarkdownRenderer {
 	</style>
 </head>
 <body>
-	<div id="notion-content">
+	<div class="notion-content">
 		${content}
 	</div>
 	<script>
