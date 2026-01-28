@@ -221,117 +221,87 @@ export class MarkdownRenderer {
 		${content}
 	</div>
 	<script>
-		// Manejar clics en mentions de Notion - abrir en modal
+		// Manejar clics en mentions - usar el sistema de modales de GM Vault
+		// Si GM Vault no encuentra la página por ID, intentar buscarla por URL
 		(function() {
-			function openMentionModal(pageUrl, pageName) {
-				// Crear overlay
-				const overlay = document.createElement('div');
-				overlay.className = 'mention-modal-overlay';
-				overlay.setAttribute('aria-modal', 'true');
-				overlay.setAttribute('role', 'dialog');
-				overlay.setAttribute('aria-label', 'Page: ' + pageName);
-				
-				// Crear modal
-				const modal = document.createElement('div');
-				modal.className = 'mention-modal';
-				
-				// Header
-				const header = document.createElement('div');
-				header.className = 'mention-modal__header';
-				
-				const title = document.createElement('h2');
-				title.className = 'mention-modal__title';
-				title.textContent = pageName;
-				
-				const closeBtn = document.createElement('button');
-				closeBtn.className = 'mention-modal__close';
-				closeBtn.innerHTML = '&times;';
-				closeBtn.setAttribute('aria-label', 'Close modal');
-				
-				header.appendChild(title);
-				header.appendChild(closeBtn);
-				
-				// Contenido - inicialmente loading
-				const content = document.createElement('div');
-				content.className = 'mention-modal__content';
-				content.innerHTML = '<div class="mention-modal__loading"><div class="mention-modal__loading-icon">⏳</div><p>Loading page...</p></div>';
-				
-				// Cargar contenido en iframe
-				const iframe = document.createElement('iframe');
-				iframe.src = pageUrl + '?modal=true';
-				iframe.onload = function() {
-					content.innerHTML = '';
-					content.appendChild(iframe);
-				};
-				iframe.onerror = function() {
-					content.innerHTML = '<div class="mention-modal__loading"><p>Error loading page</p></div>';
-				};
-				
-				modal.appendChild(header);
-				modal.appendChild(content);
-				overlay.appendChild(modal);
-				document.body.appendChild(overlay);
-				
-				// Funciones de cierre
-				const closeModal = function() {
-					overlay.classList.add('mention-modal-overlay--closing');
-					modal.classList.add('mention-modal--closing');
-					setTimeout(function() {
-						overlay.remove();
-					}, 200);
-				};
-				
-				closeBtn.addEventListener('click', closeModal);
-				overlay.addEventListener('click', function(e) {
-					if (e.target === overlay) closeModal();
-				});
-				
-				const handleEscape = function(e) {
-					if (e.key === 'Escape') {
-						closeModal();
-						document.removeEventListener('keydown', handleEscape);
-					}
-				};
-				document.addEventListener('keydown', handleEscape);
-				
-				// Animación de entrada
-				requestAnimationFrame(function() {
-					overlay.classList.add('mention-modal-overlay--visible');
-					modal.classList.add('mention-modal--visible');
-				});
-				
-				closeBtn.focus();
-			}
-			
 			const mentions = document.querySelectorAll('.notion-mention--link');
 			
 			mentions.forEach(function(mention) {
 				if (mention.dataset.listenerAdded) return;
 				mention.dataset.listenerAdded = 'true';
 				
-				// Click handler
-				mention.addEventListener('click', function(e) {
+				// Click handler que busca por URL si GM Vault no encuentra por ID
+				mention.addEventListener('click', async function(e) {
 					e.preventDefault();
 					e.stopPropagation();
 					
-					const pageUrl = this.dataset.mentionPageUrl;
+					const pageId = this.dataset.mentionPageId;
 					const pageName = this.dataset.mentionPageName || 'Page';
-					if (pageUrl) {
-						openMentionModal(pageUrl, pageName);
+					const pageUrl = this.dataset.mentionPageUrl;
+					
+					if (!pageUrl) return;
+					
+					// Si estamos en el contexto de GM Vault (window.parent tiene extensionController)
+					if (window.parent && window.parent !== window && window.parent.extensionController) {
+						try {
+							const controller = window.parent.extensionController;
+							const config = controller.config;
+							
+							// Buscar página por URL primero (más confiable para nuestras páginas)
+							let page = config?.findPageByUrl(pageUrl);
+							
+							// Si no se encuentra por URL, intentar por ID
+							if (!page && pageId) {
+								page = config?.findPageByNotionId(pageId) || config?.findPageById(pageId);
+							}
+							
+							if (page && controller._showMentionPageModal) {
+								// Usar el sistema de modales de GM Vault
+								await controller._showMentionPageModal(page, pageName);
+								return;
+							}
+						} catch (error) {
+							console.warn('Error al abrir modal con GM Vault:', error);
+						}
 					}
+					
+					// Fallback: navegar directamente a la página
+					window.location.href = pageUrl;
 				});
 				
 				// Keyboard handler (Enter/Space for accessibility)
-				mention.addEventListener('keydown', function(e) {
+				mention.addEventListener('keydown', async function(e) {
 					if (e.key === 'Enter' || e.key === ' ') {
 						e.preventDefault();
 						e.stopPropagation();
 						
-						const pageUrl = this.dataset.mentionPageUrl;
+						const pageId = this.dataset.mentionPageId;
 						const pageName = this.dataset.mentionPageName || 'Page';
-						if (pageUrl) {
-							openMentionModal(pageUrl, pageName);
+						const pageUrl = this.dataset.mentionPageUrl;
+						
+						if (!pageUrl) return;
+						
+						// Mismo código que el click handler
+						if (window.parent && window.parent !== window && window.parent.extensionController) {
+							try {
+								const controller = window.parent.extensionController;
+								const config = controller.config;
+								
+								let page = config?.findPageByUrl(pageUrl);
+								if (!page && pageId) {
+									page = config?.findPageByNotionId(pageId) || config?.findPageById(pageId);
+								}
+								
+								if (page && controller._showMentionPageModal) {
+									await controller._showMentionPageModal(page, pageName);
+									return;
+								}
+							} catch (error) {
+								console.warn('Error al abrir modal con GM Vault:', error);
+							}
 						}
+						
+						window.location.href = pageUrl;
 					}
 				});
 			});
