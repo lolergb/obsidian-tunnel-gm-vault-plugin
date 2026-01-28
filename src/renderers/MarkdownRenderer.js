@@ -388,37 +388,35 @@ export class MarkdownRenderer {
 					const linkPath = parts[0].trim();
 					const displayName = (parts[1] || parts[0]).trim();
 					
-					// Si hay pageMap, crear mention de Notion
+					// Si hay pageMap, crear mention de Notion como enlace HTML
 					if (pageMap) {
 						const pageInfo = pageMap.get(linkPath.toLowerCase());
 						
 						if (pageInfo) {
-							// Página encontrada: crear enlace con mention
+							// Página encontrada: crear enlace HTML con estilo de mention
 							const urlBase = baseUrl || this.baseUrl;
 							const mentionUrl = urlBase 
 								? `${urlBase}/pages/${this._slugify(linkPath)}`
 								: `/pages/${this._slugify(linkPath)}`;
 							
+							// Usar enlace HTML para que funcione sin JavaScript
+							// GM Vault puede convertir esto a mention después si es necesario
 							return `<a 
 								href="${this._escapeHtml(mentionUrl)}"
-								class="notion-mention notion-mention--link notion-text-link" 
+								class="notion-mention notion-mention--link" 
 								data-mention-page-id="${pageInfo.id}"
 								data-mention-page-name="${this._escapeHtml(pageInfo.name)}"
 								data-mention-page-url="${this._escapeHtml(mentionUrl)}"
+								role="button"
+								tabindex="0"
 								aria-label="Open ${this._escapeHtml(pageInfo.name)}"
 							>${this._escapeHtml(displayName)}</a>`;
 						} else {
-							// Página no encontrada: renderizar como enlace sin href
-							const urlBase = baseUrl || this.baseUrl;
-							const mentionUrl = urlBase 
-								? `${urlBase}/pages/${this._slugify(linkPath)}`
-								: `/pages/${this._slugify(linkPath)}`;
-							
-							return `<a 
-								href="${this._escapeHtml(mentionUrl)}"
-								class="notion-mention notion-mention--plain notion-text-link" 
+							// Página no encontrada: renderizar como mention plain (sin enlace)
+							return `<span 
+								class="notion-mention notion-mention--plain" 
 								data-mention-page-name="${this._escapeHtml(linkPath)}"
-							>${this._escapeHtml(displayName)}</a>`;
+							>${this._escapeHtml(displayName)}</span>`;
 						}
 					}
 					
