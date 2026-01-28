@@ -225,47 +225,52 @@ export class MarkdownRenderer {
 		// Si GM Vault no encuentra la página por ID, intentar buscarla por URL
 		(function() {
 			const mentions = document.querySelectorAll('.notion-mention--link');
+			console.log('🔍 Mentions encontrados:', mentions.length);
 			
 			mentions.forEach(function(mention) {
 				if (mention.dataset.listenerAdded) return;
 				mention.dataset.listenerAdded = 'true';
 				
-				// Click handler que busca por URL si GM Vault no encuentra por ID
+				const pageId = mention.dataset.mentionPageId;
+				const pageName = mention.dataset.mentionPageName || 'Page';
+				const pageUrl = mention.dataset.mentionPageUrl;
+				
+				console.log('📌 Mention configurado:', { pageId, pageName, pageUrl });
+				
+				// Click handler que usa postMessage para comunicarse con GM Vault de forma segura
 				mention.addEventListener('click', async function(e) {
 					e.preventDefault();
 					e.stopPropagation();
 					
-					const pageId = this.dataset.mentionPageId;
-					const pageName = this.dataset.mentionPageName || 'Page';
-					const pageUrl = this.dataset.mentionPageUrl;
+					console.log('🖱️ Click en mention:', { pageId, pageName, pageUrl });
 					
-					if (!pageUrl) return;
+					if (!pageUrl) {
+						console.warn('⚠️ No hay pageUrl en el mention');
+						return;
+					}
 					
-					// Si estamos en el contexto de GM Vault (window.parent tiene extensionController)
-					if (window.parent && window.parent !== window && window.parent.extensionController) {
+					// Si estamos en un iframe, usar postMessage para comunicarnos con GM Vault
+					if (window.parent && window.parent !== window) {
+						console.log('📨 Enviando mensaje a window.parent...');
+						
 						try {
-							const controller = window.parent.extensionController;
-							const config = controller.config;
+							// Enviar mensaje al padre (GM Vault) para abrir el modal
+							window.parent.postMessage({
+								type: 'openMentionModal',
+								pageId: pageId,
+								pageName: pageName,
+								pageUrl: pageUrl
+							}, '*'); // Usar '*' para permitir cualquier origen (GM Vault debería validar)
 							
-							// Buscar página por URL primero (más confiable para nuestras páginas)
-							let page = config?.findPageByUrl(pageUrl);
-							
-							// Si no se encuentra por URL, intentar por ID
-							if (!page && pageId) {
-								page = config?.findPageByNotionId(pageId) || config?.findPageById(pageId);
-							}
-							
-							if (page && controller._showMentionPageModal) {
-								// Usar el sistema de modales de GM Vault
-								await controller._showMentionPageModal(page, pageName);
-								return;
-							}
+							console.log('✅ Mensaje enviado a GM Vault');
+							return;
 						} catch (error) {
-							console.warn('Error al abrir modal con GM Vault:', error);
+							console.error('❌ Error al enviar mensaje:', error);
 						}
 					}
 					
 					// Fallback: navegar directamente a la página
+					console.log('🔗 Navegando directamente a:', pageUrl);
 					window.location.href = pageUrl;
 				});
 				
@@ -281,23 +286,18 @@ export class MarkdownRenderer {
 						
 						if (!pageUrl) return;
 						
-						// Mismo código que el click handler
-						if (window.parent && window.parent !== window && window.parent.extensionController) {
+						// Usar postMessage igual que en el click handler
+						if (window.parent && window.parent !== window) {
 							try {
-								const controller = window.parent.extensionController;
-								const config = controller.config;
-								
-								let page = config?.findPageByUrl(pageUrl);
-								if (!page && pageId) {
-									page = config?.findPageByNotionId(pageId) || config?.findPageById(pageId);
-								}
-								
-								if (page && controller._showMentionPageModal) {
-									await controller._showMentionPageModal(page, pageName);
-									return;
-								}
+								window.parent.postMessage({
+									type: 'openMentionModal',
+									pageId: pageId,
+									pageName: pageName,
+									pageUrl: pageUrl
+								}, '*');
+								return;
 							} catch (error) {
-								console.warn('Error al abrir modal con GM Vault:', error);
+								console.error('❌ Error al enviar mensaje:', error);
 							}
 						}
 						
