@@ -221,6 +221,9 @@ export class MarkdownRenderer {
 		${content}
 	</div>
 	<script>
+		// VERSION: 2026-01-28-v2 - Solo usa postMessage, NO accede a extensionController
+		console.log('🚀 Script cargado - VERSION 2026-01-28-v2');
+		
 		// Manejar clics en mentions - usar el sistema de modales de GM Vault
 		// Si GM Vault no encuentra la página por ID, intentar buscarla por URL
 		(function() {
@@ -238,7 +241,7 @@ export class MarkdownRenderer {
 				console.log('📌 Mention configurado:', { pageId, pageName, pageUrl });
 				
 				// Click handler que usa postMessage para comunicarse con GM Vault de forma segura
-				mention.addEventListener('click', async function(e) {
+				mention.addEventListener('click', function(e) {
 					e.preventDefault();
 					e.stopPropagation();
 					
@@ -249,24 +252,22 @@ export class MarkdownRenderer {
 						return;
 					}
 					
-					// Si estamos en un iframe, usar postMessage para comunicarnos con GM Vault
-					if (window.parent && window.parent !== window) {
-						console.log('📨 Enviando mensaje a window.parent...');
-						
-						try {
-							// Enviar mensaje al padre (GM Vault) para abrir el modal
+					// Siempre intentar usar postMessage si estamos en un iframe
+					// No intentar acceder a window.parent.extensionController (causa error CORS)
+					try {
+						if (window.parent && window.parent !== window) {
+							console.log('📨 Enviando mensaje a window.parent...');
 							window.parent.postMessage({
 								type: 'openMentionModal',
 								pageId: pageId,
 								pageName: pageName,
 								pageUrl: pageUrl
-							}, '*'); // Usar '*' para permitir cualquier origen (GM Vault debería validar)
-							
+							}, '*');
 							console.log('✅ Mensaje enviado a GM Vault');
 							return;
-						} catch (error) {
-							console.error('❌ Error al enviar mensaje:', error);
 						}
+					} catch (error) {
+						console.error('❌ Error al enviar mensaje:', error);
 					}
 					
 					// Fallback: navegar directamente a la página
@@ -275,7 +276,7 @@ export class MarkdownRenderer {
 				});
 				
 				// Keyboard handler (Enter/Space for accessibility)
-				mention.addEventListener('keydown', async function(e) {
+				mention.addEventListener('keydown', function(e) {
 					if (e.key === 'Enter' || e.key === ' ') {
 						e.preventDefault();
 						e.stopPropagation();
@@ -287,8 +288,8 @@ export class MarkdownRenderer {
 						if (!pageUrl) return;
 						
 						// Usar postMessage igual que en el click handler
-						if (window.parent && window.parent !== window) {
-							try {
+						try {
+							if (window.parent && window.parent !== window) {
 								window.parent.postMessage({
 									type: 'openMentionModal',
 									pageId: pageId,
@@ -296,9 +297,9 @@ export class MarkdownRenderer {
 									pageUrl: pageUrl
 								}, '*');
 								return;
-							} catch (error) {
-								console.error('❌ Error al enviar mensaje:', error);
 							}
+						} catch (error) {
+							console.error('❌ Error al enviar mensaje:', error);
 						}
 						
 						window.location.href = pageUrl;
