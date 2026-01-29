@@ -1413,8 +1413,8 @@ export class MarkdownRenderer {
 				const img1 = images[i];
 				const imgUrl = img1.path.startsWith('http') ? img1.path : `${normalizedBase}${img1.path}`;
 				imagesHtml += `
-					<div style="flex: 1;">
-						<img src="${this._escapeHtml(imgUrl)}" alt="${this._escapeHtml(img1.name)}" style="width: 100%; height: auto; border-radius: 4px; object-fit: contain; background: #f5f5f5;" />
+					<div class="notion-image-container" style="flex: 1; position: relative;">
+						<img src="${this._escapeHtml(imgUrl)}" alt="${this._escapeHtml(img1.name)}" class="notion-image-clickable" style="width: 100%; height: auto; border-radius: 4px; object-fit: contain; background: #f5f5f5; cursor: pointer;" />
 					</div>`;
 			}
 			
@@ -1423,8 +1423,8 @@ export class MarkdownRenderer {
 				const img2 = images[i + 1];
 				const imgUrl = img2.path.startsWith('http') ? img2.path : `${normalizedBase}${img2.path}`;
 				imagesHtml += `
-					<div style="flex: 1;">
-						<img src="${this._escapeHtml(imgUrl)}" alt="${this._escapeHtml(img2.name)}" style="width: 100%; height: auto; border-radius: 4px; object-fit: contain; background: #f5f5f5;" />
+					<div class="notion-image-container" style="flex: 1; position: relative;">
+						<img src="${this._escapeHtml(imgUrl)}" alt="${this._escapeHtml(img2.name)}" class="notion-image-clickable" style="width: 100%; height: auto; border-radius: 4px; object-fit: contain; background: #f5f5f5; cursor: pointer;" />
 					</div>`;
 			} else {
 				imagesHtml += '<div style="flex: 1;"></div>';
@@ -1435,8 +1435,8 @@ export class MarkdownRenderer {
 				const img3 = images[i + 2];
 				const imgUrl = img3.path.startsWith('http') ? img3.path : `${normalizedBase}${img3.path}`;
 				imagesHtml += `
-					<div style="flex: 1;">
-						<img src="${this._escapeHtml(imgUrl)}" alt="${this._escapeHtml(img3.name)}" style="width: 100%; height: auto; border-radius: 4px; object-fit: contain; background: #f5f5f5;" />
+					<div class="notion-image-container" style="flex: 1; position: relative;">
+						<img src="${this._escapeHtml(imgUrl)}" alt="${this._escapeHtml(img3.name)}" class="notion-image-clickable" style="width: 100%; height: auto; border-radius: 4px; object-fit: contain; background: #f5f5f5; cursor: pointer;" />
 					</div>`;
 			} else {
 				imagesHtml += '<div style="flex: 1;"></div>';
@@ -1468,13 +1468,111 @@ export class MarkdownRenderer {
 			font-weight: 600;
 			color: inherit;
 		}
+		.notion-image-container {
+			position: relative;
+		}
+		.notion-image-share-button {
+			position: absolute;
+			top: 8px;
+			right: 8px;
+			background: rgba(0, 0, 0, 0.8);
+			border: 1px solid rgba(255, 255, 255, 0.2);
+			border-radius: 4px;
+			padding: 6px 8px;
+			cursor: pointer;
+			opacity: 0;
+			transition: opacity 0.2s;
+			z-index: 10;
+		}
+		.notion-image-container:hover .notion-image-share-button {
+			opacity: 0.6;
+		}
+		.notion-image-share-button:hover {
+			opacity: 1 !important;
+			background: rgba(0, 0, 0, 0.95);
+		}
+		.notion-image-share-button svg {
+			width: 16px;
+			height: 16px;
+			fill: white;
+		}
 	</style>
 </head>
 <body>
-	<div id="notion-content">
+	<div id="notion-content" class="notion-content">
 		<h1>${this._escapeHtml(title)}</h1>
 		${imagesHtml}
 	</div>
+	<script>
+		// VERSION: gallery-v1 - Image gallery handlers
+		console.log('🖼️ Gallery script cargado');
+		
+		function addImageHandlers() {
+			const images = document.querySelectorAll('.notion-image-clickable');
+			console.log('🔍 Imágenes encontradas:', images.length);
+			
+			images.forEach(function(img) {
+				const container = img.parentElement;
+				
+				// Click handler para ver en grande
+				if (!img.dataset.clickListenerAdded) {
+					img.dataset.clickListenerAdded = 'true';
+					img.addEventListener('click', function(e) {
+						e.preventDefault();
+						const imageUrl = img.src;
+						const caption = img.alt || '';
+						console.log('🔍 Abriendo imagen en modal:', imageUrl);
+						if (window.parent && window.parent !== window) {
+							try {
+								window.parent.postMessage({ type: 'showImageModal', imageUrl: imageUrl, caption: caption }, '*');
+							} catch (error) {
+								console.error('Error:', error);
+							}
+						}
+					});
+				}
+				
+				// Añadir botón de share si no existe
+				if (!container.querySelector('.notion-image-share-button')) {
+					const shareBtn = document.createElement('button');
+					shareBtn.className = 'notion-image-share-button';
+					shareBtn.title = 'Share with players';
+					shareBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>';
+					shareBtn.addEventListener('click', function(e) {
+						e.preventDefault();
+						e.stopPropagation();
+						const imageUrl = img.src;
+						const caption = img.alt || '';
+						console.log('🖼️ Compartiendo imagen:', imageUrl);
+						if (window.parent && window.parent !== window) {
+							try {
+								window.parent.postMessage({ type: 'shareImage', imageUrl: imageUrl, caption: caption }, '*');
+							} catch (error) {
+								console.error('Error:', error);
+							}
+						}
+					});
+					container.appendChild(shareBtn);
+				}
+			});
+		}
+		
+		// Ejecutar inmediatamente
+		addImageHandlers();
+		
+		// También escuchar setUserRole para re-aplicar handlers
+		window.addEventListener('message', function(event) {
+			if (event.data && event.data.type === 'setUserRole') {
+				console.log('📨 Rol recibido en gallery:', event.data);
+				addImageHandlers();
+			}
+		});
+		
+		// Preguntar rol al padre
+		if (window.parent && window.parent !== window) {
+			window.parent.postMessage({ type: 'queryUserRole' }, '*');
+		}
+	</script>
 </body>
 </html>`;
 	}
