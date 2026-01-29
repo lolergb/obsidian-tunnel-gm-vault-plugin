@@ -666,8 +666,30 @@ export class MarkdownRenderer {
 		${content}
 	</div>
 	<script>
-		// VERSION: 2026-01-28-v2 - Solo usa postMessage, NO accede a extensionController
-		console.log('🚀 Script cargado - VERSION 2026-01-28-v2');
+		// VERSION: 2026-01-28-v3 - Soporte para Player mode (mentions plain)
+		console.log('🚀 Script cargado - VERSION 2026-01-28-v3');
+		
+		// Escuchar mensajes de GM Vault para determinar el rol del usuario
+		window.addEventListener('message', function(event) {
+			if (event.data && event.data.type === 'setUserRole') {
+				console.log('📨 Rol de usuario recibido:', event.data);
+				
+				if (event.data.isPlayer) {
+					// Si es Player, convertir todos los mentions a plain
+					console.log('👤 Usuario es Player - convirtiendo mentions a plain');
+					const linkMentions = document.querySelectorAll('.notion-mention--link');
+					linkMentions.forEach(function(mention) {
+						mention.classList.remove('notion-mention--link');
+						mention.classList.add('notion-mention--plain');
+						mention.removeAttribute('role');
+						mention.removeAttribute('tabindex');
+						mention.removeAttribute('aria-label');
+						mention.style.cursor = 'default';
+					});
+					console.log('✅ Convertidos', linkMentions.length, 'mentions a plain');
+				}
+			}
+		});
 		
 		// Manejar clics en mentions - usar el sistema de modales de GM Vault
 		// Si GM Vault no encuentra la página por ID, intentar buscarla por URL
@@ -687,6 +709,11 @@ export class MarkdownRenderer {
 				
 				// Click handler que usa postMessage para comunicarse con GM Vault de forma segura
 				mention.addEventListener('click', function(e) {
+					// Si el mention ya es plain (Player mode), no hacer nada
+					if (this.classList.contains('notion-mention--plain')) {
+						return;
+					}
+					
 					e.preventDefault();
 					e.stopPropagation();
 					
@@ -722,6 +749,11 @@ export class MarkdownRenderer {
 				
 				// Keyboard handler (Enter/Space for accessibility)
 				mention.addEventListener('keydown', function(e) {
+					// Si el mention ya es plain (Player mode), no hacer nada
+					if (this.classList.contains('notion-mention--plain')) {
+						return;
+					}
+					
 					if (e.key === 'Enter' || e.key === ' ') {
 						e.preventDefault();
 						e.stopPropagation();
