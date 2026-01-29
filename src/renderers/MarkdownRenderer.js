@@ -725,16 +725,13 @@ export class MarkdownRenderer {
 			console.log('✅ Convertidos', linkMentions.length, 'mentions a plain');
 		}
 		
-		// Función para añadir botones de share a las imágenes (solo para GM)
+		// Función para añadir botones de share y click handlers a las imágenes
 		function addShareButtonsToImages() {
-			console.log('🖼️ Añadiendo botones de share a imágenes');
+			console.log('🖼️ Añadiendo botones de share y click handlers a imágenes');
 			const images = document.querySelectorAll('.notion-content img');
 			console.log('🔍 Imágenes encontradas:', images.length);
 			
 			images.forEach(function(img) {
-				// Si ya tiene botón, saltar
-				if (img.parentElement.querySelector('.notion-image-share-button')) return;
-				
 				// Asegurar que el contenedor tiene position relative
 				const container = img.parentElement;
 				if (container && !container.classList.contains('notion-image-container')) {
@@ -742,6 +739,39 @@ export class MarkdownRenderer {
 					container.style.position = 'relative';
 					container.style.display = 'inline-block';
 				}
+				
+				// Añadir clase clickable y cursor pointer
+				img.classList.add('notion-image-clickable');
+				img.style.cursor = 'pointer';
+				
+				// Handler para ver en grande (si no existe)
+				if (!img.dataset.clickListenerAdded) {
+					img.dataset.clickListenerAdded = 'true';
+					img.addEventListener('click', function(e) {
+						e.preventDefault();
+						const imageUrl = img.src || img.dataset.imageUrl;
+						const caption = img.alt || '';
+						
+						console.log('🔍 Abriendo imagen en modal:', imageUrl);
+						
+						// Enviar mensaje a GM Vault para mostrar en modal
+						if (window.parent && window.parent !== window) {
+							try {
+								window.parent.postMessage({
+									type: 'showImageModal',
+									imageUrl: imageUrl,
+									caption: caption
+								}, '*');
+								console.log('✅ Mensaje de modal enviado');
+							} catch (error) {
+								console.error('❌ Error al enviar mensaje de modal:', error);
+							}
+						}
+					});
+				}
+				
+				// Si ya tiene botón de share, saltar
+				if (img.parentElement.querySelector('.notion-image-share-button')) return;
 				
 				// Crear botón de share
 				const shareBtn = document.createElement('button');
@@ -778,7 +808,7 @@ export class MarkdownRenderer {
 					container.appendChild(shareBtn);
 				}
 			});
-			console.log('✅ Botones de share añadidos');
+			console.log('✅ Botones de share y click handlers añadidos');
 		}
 		
 		// Función para eliminar botones de share (para Players)
