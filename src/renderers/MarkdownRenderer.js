@@ -725,15 +725,68 @@ export class MarkdownRenderer {
 			console.log('✅ Convertidos', linkMentions.length, 'mentions a plain');
 		}
 		
+		// Modal local para ver imágenes en grande (fallback cuando postMessage no funciona)
+		function showLocalImageModal(imageUrl, caption) {
+			var overlay = document.createElement('div');
+			overlay.id = 'image-modal-overlay';
+			overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; cursor: pointer;';
+			
+			var imgContainer = document.createElement('div');
+			imgContainer.style.cssText = 'max-width: 95%; max-height: 95%; position: relative;';
+			
+			var modalImg = document.createElement('img');
+			modalImg.src = imageUrl;
+			modalImg.alt = caption || '';
+			modalImg.style.cssText = 'max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 8px;';
+			
+			if (caption) {
+				var captionEl = document.createElement('p');
+				captionEl.textContent = caption;
+				captionEl.style.cssText = 'text-align: center; color: white; margin-top: 12px; font-size: 14px;';
+				imgContainer.appendChild(modalImg);
+				imgContainer.appendChild(captionEl);
+			} else {
+				imgContainer.appendChild(modalImg);
+			}
+			
+			var closeBtn = document.createElement('button');
+			closeBtn.innerHTML = '✕';
+			closeBtn.style.cssText = 'position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px;';
+			closeBtn.addEventListener('click', function(e) {
+				e.stopPropagation();
+				document.body.removeChild(overlay);
+			});
+			
+			overlay.appendChild(imgContainer);
+			overlay.appendChild(closeBtn);
+			
+			overlay.addEventListener('click', function(e) {
+				if (e.target === overlay) {
+					document.body.removeChild(overlay);
+				}
+			});
+			
+			var escHandler = function(e) {
+				if (e.key === 'Escape') {
+					var modal = document.getElementById('image-modal-overlay');
+					if (modal) document.body.removeChild(modal);
+					document.removeEventListener('keydown', escHandler);
+				}
+			};
+			document.addEventListener('keydown', escHandler);
+			
+			document.body.appendChild(overlay);
+		}
+		
 		// Función para añadir botones de share y click handlers a las imágenes
 		function addShareButtonsToImages() {
 			console.log('🖼️ Añadiendo botones de share y click handlers a imágenes');
-			const images = document.querySelectorAll('.notion-content img');
+			var images = document.querySelectorAll('.notion-content img');
 			console.log('🔍 Imágenes encontradas:', images.length);
 			
 			images.forEach(function(img) {
 				// Asegurar que el contenedor tiene position relative
-				const container = img.parentElement;
+				var container = img.parentElement;
 				if (container && !container.classList.contains('notion-image-container')) {
 					container.classList.add('notion-image-container');
 					container.style.position = 'relative';
@@ -749,12 +802,12 @@ export class MarkdownRenderer {
 					img.dataset.clickListenerAdded = 'true';
 					img.addEventListener('click', function(e) {
 						e.preventDefault();
-						const imageUrl = img.src || img.dataset.imageUrl;
-						const caption = img.alt || '';
+						var imageUrl = img.src || img.dataset.imageUrl;
+						var caption = img.alt || '';
 						
 						console.log('🔍 Abriendo imagen en modal:', imageUrl);
 						
-						// Enviar mensaje a GM Vault para mostrar en modal
+						// Intentar enviar a GM Vault primero
 						if (window.parent && window.parent !== window) {
 							try {
 								window.parent.postMessage({
@@ -762,11 +815,13 @@ export class MarkdownRenderer {
 									imageUrl: imageUrl,
 									caption: caption
 								}, '*');
-								console.log('✅ Mensaje de modal enviado');
 							} catch (error) {
-								console.error('❌ Error al enviar mensaje de modal:', error);
+								console.log('PostMessage falló');
 							}
 						}
+						
+						// Siempre mostrar modal local como fallback
+						showLocalImageModal(imageUrl, caption);
 					});
 				}
 				
@@ -774,7 +829,7 @@ export class MarkdownRenderer {
 				if (img.parentElement.querySelector('.notion-image-share-button')) return;
 				
 				// Crear botón de share
-				const shareBtn = document.createElement('button');
+				var shareBtn = document.createElement('button');
 				shareBtn.className = 'notion-image-share-button share-button';
 				shareBtn.title = 'Share with players';
 				shareBtn.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>';
@@ -784,8 +839,8 @@ export class MarkdownRenderer {
 					e.preventDefault();
 					e.stopPropagation();
 					
-					const imageUrl = img.src || img.dataset.imageUrl;
-					const caption = img.alt || '';
+					var imageUrl = img.src || img.dataset.imageUrl;
+					var caption = img.alt || '';
 					
 					console.log('🖼️ Compartiendo imagen:', imageUrl);
 					
@@ -1504,45 +1559,112 @@ export class MarkdownRenderer {
 		${imagesHtml}
 	</div>
 	<script>
-		// VERSION: gallery-v1 - Image gallery handlers
-		console.log('🖼️ Gallery script cargado');
+		// VERSION: gallery-v2 - Image gallery handlers with local modal
+		console.log('🖼️ Gallery script cargado v2');
+		
+		// Modal local para ver imágenes en grande
+		function showLocalImageModal(imageUrl, caption) {
+			// Crear overlay
+			var overlay = document.createElement('div');
+			overlay.id = 'image-modal-overlay';
+			overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; cursor: pointer;';
+			
+			// Crear contenedor de imagen
+			var imgContainer = document.createElement('div');
+			imgContainer.style.cssText = 'max-width: 95%; max-height: 95%; position: relative;';
+			
+			// Crear imagen
+			var img = document.createElement('img');
+			img.src = imageUrl;
+			img.alt = caption || '';
+			img.style.cssText = 'max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 8px;';
+			
+			// Crear caption si existe
+			if (caption) {
+				var captionEl = document.createElement('p');
+				captionEl.textContent = caption;
+				captionEl.style.cssText = 'text-align: center; color: white; margin-top: 12px; font-size: 14px;';
+				imgContainer.appendChild(img);
+				imgContainer.appendChild(captionEl);
+			} else {
+				imgContainer.appendChild(img);
+			}
+			
+			// Botón de cerrar
+			var closeBtn = document.createElement('button');
+			closeBtn.innerHTML = '✕';
+			closeBtn.style.cssText = 'position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px;';
+			closeBtn.addEventListener('click', function(e) {
+				e.stopPropagation();
+				document.body.removeChild(overlay);
+			});
+			
+			overlay.appendChild(imgContainer);
+			overlay.appendChild(closeBtn);
+			
+			// Cerrar al hacer click en overlay
+			overlay.addEventListener('click', function(e) {
+				if (e.target === overlay) {
+					document.body.removeChild(overlay);
+				}
+			});
+			
+			// Cerrar con Escape
+			var escHandler = function(e) {
+				if (e.key === 'Escape') {
+					var modal = document.getElementById('image-modal-overlay');
+					if (modal) document.body.removeChild(modal);
+					document.removeEventListener('keydown', escHandler);
+				}
+			};
+			document.addEventListener('keydown', escHandler);
+			
+			document.body.appendChild(overlay);
+		}
 		
 		function addImageHandlers() {
-			const images = document.querySelectorAll('.notion-image-clickable');
+			var images = document.querySelectorAll('.notion-image-clickable');
 			console.log('🔍 Imágenes encontradas:', images.length);
 			
 			images.forEach(function(img) {
-				const container = img.parentElement;
+				var container = img.parentElement;
 				
 				// Click handler para ver en grande
 				if (!img.dataset.clickListenerAdded) {
 					img.dataset.clickListenerAdded = 'true';
 					img.addEventListener('click', function(e) {
 						e.preventDefault();
-						const imageUrl = img.src;
-						const caption = img.alt || '';
+						var imageUrl = img.src;
+						var caption = img.alt || '';
 						console.log('🔍 Abriendo imagen en modal:', imageUrl);
+						
+						// Intentar enviar a GM Vault primero
+						var messageSent = false;
 						if (window.parent && window.parent !== window) {
 							try {
 								window.parent.postMessage({ type: 'showImageModal', imageUrl: imageUrl, caption: caption }, '*');
+								messageSent = true;
 							} catch (error) {
-								console.error('Error:', error);
+								console.log('PostMessage falló, usando modal local');
 							}
 						}
+						
+						// Siempre mostrar modal local como fallback (GM Vault puede no recibir el mensaje)
+						showLocalImageModal(imageUrl, caption);
 					});
 				}
 				
 				// Añadir botón de share si no existe
 				if (!container.querySelector('.notion-image-share-button')) {
-					const shareBtn = document.createElement('button');
+					var shareBtn = document.createElement('button');
 					shareBtn.className = 'notion-image-share-button';
 					shareBtn.title = 'Share with players';
 					shareBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>';
 					shareBtn.addEventListener('click', function(e) {
 						e.preventDefault();
 						e.stopPropagation();
-						const imageUrl = img.src;
-						const caption = img.alt || '';
+						var imageUrl = img.src;
+						var caption = img.alt || '';
 						console.log('🖼️ Compartiendo imagen:', imageUrl);
 						if (window.parent && window.parent !== window) {
 							try {
