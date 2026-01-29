@@ -666,36 +666,51 @@ export class MarkdownRenderer {
 		${content}
 	</div>
 	<script>
-		// VERSION: 2026-01-28-v4 - Soporte para Player mode (mentions plain)
-		console.log('🚀 Script cargado - VERSION 2026-01-28-v4');
-		console.log('🔊 Añadiendo listener para mensajes...');
+		// VERSION: 2026-01-28-v5 - Soporte para Player mode (mentions plain)
+		console.log('🚀 Script cargado - VERSION 2026-01-28-v5');
+		
+		// Función para convertir mentions a plain
+		function convertMentionsToPlain() {
+			console.log('👤 Convirtiendo mentions a plain para Player');
+			const linkMentions = document.querySelectorAll('.notion-mention--link');
+			console.log('🔍 Mentions --link encontrados:', linkMentions.length);
+			linkMentions.forEach(function(mention) {
+				mention.classList.remove('notion-mention--link');
+				mention.classList.add('notion-mention--plain');
+				mention.removeAttribute('role');
+				mention.removeAttribute('tabindex');
+				mention.removeAttribute('aria-label');
+				mention.style.cursor = 'default';
+			});
+			console.log('✅ Convertidos', linkMentions.length, 'mentions a plain');
+		}
 		
 		// Escuchar mensajes de GM Vault para determinar el rol del usuario
 		window.addEventListener('message', function(event) {
-			console.log('📩 Mensaje recibido:', event.data);
-			
 			if (event.data && event.data.type === 'setUserRole') {
 				console.log('📨 Rol de usuario recibido:', event.data);
-				
 				if (event.data.isPlayer) {
-					// Si es Player, convertir todos los mentions a plain
-					console.log('👤 Usuario es Player - convirtiendo mentions a plain');
-					const linkMentions = document.querySelectorAll('.notion-mention--link');
-					console.log('🔍 Mentions --link encontrados:', linkMentions.length);
-					linkMentions.forEach(function(mention) {
-						mention.classList.remove('notion-mention--link');
-						mention.classList.add('notion-mention--plain');
-						mention.removeAttribute('role');
-						mention.removeAttribute('tabindex');
-						mention.removeAttribute('aria-label');
-						mention.style.cursor = 'default';
-					});
-					console.log('✅ Convertidos', linkMentions.length, 'mentions a plain');
+					convertMentionsToPlain();
 				} else {
 					console.log('👑 Usuario es GM - mentions interactivos');
 				}
 			}
+			
+			// Responder a consulta de rol
+			if (event.data && event.data.type === 'getUserRole') {
+				console.log('📨 Consulta de rol recibida');
+			}
 		});
+		
+		// Si estamos en un iframe, preguntar al padre si somos Player
+		if (window.parent && window.parent !== window) {
+			console.log('📤 Preguntando al padre si somos Player...');
+			try {
+				window.parent.postMessage({ type: 'queryUserRole' }, '*');
+			} catch (e) {
+				console.error('❌ Error preguntando rol:', e);
+			}
+		}
 		
 		console.log('✅ Listener de mensajes añadido');
 		
