@@ -666,11 +666,14 @@ export class MarkdownRenderer {
 		${content}
 	</div>
 	<script>
-		// VERSION: 2026-01-28-v3 - Soporte para Player mode (mentions plain)
-		console.log('🚀 Script cargado - VERSION 2026-01-28-v3');
+		// VERSION: 2026-01-28-v4 - Soporte para Player mode (mentions plain)
+		console.log('🚀 Script cargado - VERSION 2026-01-28-v4');
+		console.log('🔊 Añadiendo listener para mensajes...');
 		
 		// Escuchar mensajes de GM Vault para determinar el rol del usuario
 		window.addEventListener('message', function(event) {
+			console.log('📩 Mensaje recibido:', event.data);
+			
 			if (event.data && event.data.type === 'setUserRole') {
 				console.log('📨 Rol de usuario recibido:', event.data);
 				
@@ -678,6 +681,7 @@ export class MarkdownRenderer {
 					// Si es Player, convertir todos los mentions a plain
 					console.log('👤 Usuario es Player - convirtiendo mentions a plain');
 					const linkMentions = document.querySelectorAll('.notion-mention--link');
+					console.log('🔍 Mentions --link encontrados:', linkMentions.length);
 					linkMentions.forEach(function(mention) {
 						mention.classList.remove('notion-mention--link');
 						mention.classList.add('notion-mention--plain');
@@ -687,9 +691,13 @@ export class MarkdownRenderer {
 						mention.style.cursor = 'default';
 					});
 					console.log('✅ Convertidos', linkMentions.length, 'mentions a plain');
+				} else {
+					console.log('👑 Usuario es GM - mentions interactivos');
 				}
 			}
 		});
+		
+		console.log('✅ Listener de mensajes añadido');
 		
 		// Manejar clics en mentions - usar el sistema de modales de GM Vault
 		// Si GM Vault no encuentra la página por ID, intentar buscarla por URL
