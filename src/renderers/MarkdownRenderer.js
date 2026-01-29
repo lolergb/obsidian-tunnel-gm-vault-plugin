@@ -440,6 +440,43 @@ export class MarkdownRenderer {
 			margin-top: var(--spacing-xs);
 		}
 		
+		/* Image share button styles */
+		.notion-image-container {
+			position: relative;
+		}
+		
+		.notion-image-share-button {
+			position: absolute;
+			top: var(--spacing-sm);
+			right: var(--spacing-sm);
+			background: var(--share-button-bg, rgba(0, 0, 0, 0.8));
+			border: 1px solid var(--share-button-border, rgba(255, 255, 255, 0.2));
+			border-radius: var(--radius-sm);
+			padding: var(--spacing-xs) var(--spacing-sm);
+			cursor: pointer;
+			opacity: 0;
+			transition: opacity var(--transition-fast), background-color var(--transition-fast);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			z-index: 10;
+		}
+		
+		.notion-image-container:hover .notion-image-share-button {
+			opacity: var(--share-button-opacity, 0.6);
+		}
+		
+		.notion-image-share-button:hover {
+			opacity: var(--share-button-opacity-hover, 1) !important;
+			background: var(--share-button-bg-hover, rgba(0, 0, 0, 0.95));
+		}
+		
+		.notion-image-share-button svg {
+			width: 16px;
+			height: 16px;
+			fill: white;
+		}
+		
 		.notion-content .notion-bulleted-list,
 		.notion-content .notion-numbered-list,
 		.notion-content ul,
@@ -666,8 +703,11 @@ export class MarkdownRenderer {
 		${content}
 	</div>
 	<script>
-		// VERSION: 2026-01-28-v5 - Soporte para Player mode (mentions plain)
-		console.log('🚀 Script cargado - VERSION 2026-01-28-v5');
+		// VERSION: 2026-01-28-v6 - Soporte para compartir imágenes
+		console.log('🚀 Script cargado - VERSION 2026-01-28-v6');
+		
+		// Estado del usuario
+		var userRole = { isGM: false, isPlayer: true, isCoGM: false };
 		
 		// Función para convertir mentions a plain
 		function convertMentionsToPlain() {
@@ -685,20 +725,86 @@ export class MarkdownRenderer {
 			console.log('✅ Convertidos', linkMentions.length, 'mentions a plain');
 		}
 		
+		// Función para añadir botones de share a las imágenes (solo para GM)
+		function addShareButtonsToImages() {
+			console.log('🖼️ Añadiendo botones de share a imágenes');
+			const images = document.querySelectorAll('.notion-content img');
+			console.log('🔍 Imágenes encontradas:', images.length);
+			
+			images.forEach(function(img) {
+				// Si ya tiene botón, saltar
+				if (img.parentElement.querySelector('.notion-image-share-button')) return;
+				
+				// Asegurar que el contenedor tiene position relative
+				const container = img.parentElement;
+				if (container && !container.classList.contains('notion-image-container')) {
+					container.classList.add('notion-image-container');
+					container.style.position = 'relative';
+					container.style.display = 'inline-block';
+				}
+				
+				// Crear botón de share
+				const shareBtn = document.createElement('button');
+				shareBtn.className = 'notion-image-share-button share-button';
+				shareBtn.title = 'Share with players';
+				shareBtn.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>';
+				
+				// Handler para share
+				shareBtn.addEventListener('click', function(e) {
+					e.preventDefault();
+					e.stopPropagation();
+					
+					const imageUrl = img.src || img.dataset.imageUrl;
+					const caption = img.alt || '';
+					
+					console.log('🖼️ Compartiendo imagen:', imageUrl);
+					
+					// Enviar mensaje a GM Vault para compartir la imagen
+					if (window.parent && window.parent !== window) {
+						try {
+							window.parent.postMessage({
+								type: 'shareImage',
+								imageUrl: imageUrl,
+								caption: caption
+							}, '*');
+							console.log('✅ Mensaje de share enviado');
+						} catch (error) {
+							console.error('❌ Error al enviar mensaje de share:', error);
+						}
+					}
+				});
+				
+				if (container) {
+					container.appendChild(shareBtn);
+				}
+			});
+			console.log('✅ Botones de share añadidos');
+		}
+		
+		// Función para eliminar botones de share (para Players)
+		function removeShareButtons() {
+			const buttons = document.querySelectorAll('.notion-image-share-button');
+			buttons.forEach(function(btn) {
+				btn.remove();
+			});
+			console.log('🗑️ Botones de share eliminados para Player');
+		}
+		
 		// Escuchar mensajes de GM Vault para determinar el rol del usuario
 		window.addEventListener('message', function(event) {
 			if (event.data && event.data.type === 'setUserRole') {
 				console.log('📨 Rol de usuario recibido:', event.data);
+				userRole.isGM = event.data.isGM;
+				userRole.isPlayer = event.data.isPlayer;
+				userRole.isCoGM = event.data.isCoGM;
+				
 				if (event.data.isPlayer) {
 					convertMentionsToPlain();
+					removeShareButtons();
 				} else {
-					console.log('👑 Usuario es GM - mentions interactivos');
+					console.log('👑 Usuario es GM - añadiendo botones de share');
+					addShareButtonsToImages();
 				}
-			}
-			
-			// Responder a consulta de rol
-			if (event.data && event.data.type === 'getUserRole') {
-				console.log('📨 Consulta de rol recibida');
 			}
 		});
 		
