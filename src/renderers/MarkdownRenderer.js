@@ -798,16 +798,13 @@ export class MarkdownRenderer {
 				userRole.isPlayer = event.data.isPlayer;
 				userRole.isCoGM = event.data.isCoGM;
 				
-				// GM y coGM pueden compartir imágenes
-				var canShare = event.data.isGM || event.data.isCoGM;
-				
 				if (event.data.isPlayer) {
 					convertMentionsToPlain();
-					removeShareButtons();
-				} else if (canShare) {
-					console.log('👑 Usuario es GM/coGM - añadiendo botones de share');
-					addShareButtonsToImages();
 				}
+				
+				// Todos pueden compartir imágenes (GM, coGM y Players)
+				console.log('🖼️ Añadiendo botones de share a imágenes para todos');
+				addShareButtonsToImages();
 			}
 		});
 		
