@@ -250,7 +250,7 @@ export class MarkdownRenderer {
 		.notion-content {
 			padding: 0 var(--spacing-xl) var(--spacing-xl);
 			max-width: 800px;
-			margin: 0 auto;
+			margin: 0 !important;
 			color: var(--color-text-primary);
 			line-height: 1.6;
 			font-family: var(--font-family-base);
@@ -1487,6 +1487,7 @@ export class MarkdownRenderer {
 			padding: 20px;
 			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 			background: transparent;
+			color: #fff;
 		}
 		#notion-content {
 			max-width: 1200px;
@@ -1496,7 +1497,7 @@ export class MarkdownRenderer {
 			margin-bottom: 24px;
 			font-size: 24px;
 			font-weight: 600;
-			color: inherit;
+			color: #fff;
 		}
 		.notion-image-container {
 			position: relative;
