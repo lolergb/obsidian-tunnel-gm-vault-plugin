@@ -703,11 +703,21 @@ export class MarkdownRenderer {
 		${content}
 	</div>
 	<script>
-		// VERSION: 2026-01-28-v6 - Soporte para compartir imágenes
-		console.log('🚀 Script cargado - VERSION 2026-01-28-v6');
+		// VERSION: 2026-01-29-v7 - Deshabilitar links en modal sin parpadeo
+		console.log('🚀 Script cargado - VERSION 2026-01-29-v7');
 		
 		// Estado del usuario
 		var userRole = { isGM: false, isPlayer: true, isCoGM: false };
+		
+		// Detectar si estamos en un modal desde el parámetro de URL (evita parpadeo)
+		var isInModal = new URLSearchParams(window.location.search).get('inModal') === 'true';
+		if (isInModal) {
+			console.log('🔒 Detectado inModal=true en URL - aplicando estilos inmediatamente');
+			// Inyectar CSS inmediatamente para evitar parpadeo
+			var modalStyle = document.createElement('style');
+			modalStyle.textContent = '.notion-mention--link { background-color: rgba(150, 122, 204, 0.1) !important; color: var(--color-text-secondary) !important; pointer-events: none !important; cursor: default !important; }';
+			document.head.appendChild(modalStyle);
+		}
 		
 		// Función para convertir mentions a plain
 		function convertMentionsToPlain() {
