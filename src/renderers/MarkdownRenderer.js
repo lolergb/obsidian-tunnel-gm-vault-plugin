@@ -820,6 +820,22 @@ export class MarkdownRenderer {
 			console.log('🗑️ Botones de share eliminados para Player');
 		}
 		
+		// Función para deshabilitar mentions (dentro de modal - sin navegación)
+		function disableMentionsInModal() {
+			console.log('🚫 Deshabilitando mentions dentro del modal');
+			const linkMentions = document.querySelectorAll('.notion-mention--link');
+			console.log('🔍 Mentions --link encontrados:', linkMentions.length);
+			linkMentions.forEach(function(mention) {
+				mention.classList.remove('notion-mention--link');
+				mention.classList.add('notion-mention--disabled');
+				mention.removeAttribute('role');
+				mention.removeAttribute('tabindex');
+				mention.style.pointerEvents = 'none';
+				mention.style.cursor = 'default';
+			});
+			console.log('✅ Mentions deshabilitados para modal');
+		}
+		
 		// Escuchar mensajes de GM Vault para determinar el rol del usuario
 		window.addEventListener('message', function(event) {
 			if (event.data && event.data.type === 'setUserRole') {
@@ -828,7 +844,11 @@ export class MarkdownRenderer {
 				userRole.isPlayer = event.data.isPlayer;
 				userRole.isCoGM = event.data.isCoGM;
 				
-				if (event.data.isPlayer) {
+				// Si está dentro de un modal, deshabilitar navegación de mentions
+				if (event.data.isInModal) {
+					console.log('🔒 Contenido en modal - deshabilitando navegación');
+					disableMentionsInModal();
+				} else if (event.data.isPlayer) {
 					convertMentionsToPlain();
 				}
 				
