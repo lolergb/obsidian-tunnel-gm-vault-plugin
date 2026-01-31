@@ -1717,48 +1717,22 @@ export class MarkdownRenderer {
 	}
 
 	/**
-	 * Envuelve el contenido en la estructura de Notion con título.
+	 * Wraps content in Notion structure.
+	 * 
+	 * Note: We do NOT add an artificial H1 with the filename because:
+	 * - The page name is already in the JSON 'name' field
+	 * - The content should reflect the markdown file 1:1
+	 * - If the file has an H1, it will be rendered; if not, none is added
 	 * 
 	 * @private
-	 * @param {string} content - Contenido HTML
-	 * @param {string} title - Título de la página (puede contener markdown)
-	 * @returns {string} HTML con estructura de Notion y título
+	 * @param {string} content - HTML content
+	 * @param {string} title - Page title (unused, kept for API compatibility)
+	 * @returns {string} HTML content as-is
 	 */
 	_wrapInNotionStructure(content, title) {
-		// Remover el primer H1 si existe (el título del markdown)
-		// para evitar duplicar el título
-		let cleanedContent = content;
-		
-		// Buscar y remover el primer H1 (puede tener clases de Notion ya aplicadas)
-		cleanedContent = cleanedContent.replace(
-			/^<h1[^>]*>.*?<\/h1>\s*/i,
-			''
-		);
-		
-		// También buscar H1 que pueda estar al inicio de un párrafo o bloque
-		cleanedContent = cleanedContent.replace(
-			/^<p[^>]*>\s*<h1[^>]*>.*?<\/h1>\s*<\/p>\s*/i,
-			''
-		);
-		
-		// Renderizar el título si contiene markdown (ej: **texto**, *texto*, etc.)
-		let titleHtml = title;
-		if (title.includes('**') || title.includes('*') || title.includes('`') || title.includes('[')) {
-			// Renderizar el markdown del título
-			titleHtml = this.md.renderInline(title);
-			// Aplicar clases de Notion al HTML renderizado
-			titleHtml = titleHtml.replace(/<strong>/gi, '<strong class="notion-text-bold">');
-			titleHtml = titleHtml.replace(/<em>/gi, '<em class="notion-text-italic">');
-			titleHtml = titleHtml.replace(/<code>/gi, '<code class="notion-text-code">');
-		} else {
-			// Si no tiene markdown, solo escapar HTML
-			titleHtml = this._escapeHtml(title);
-		}
-		
-		// Limpiar saltos de línea innecesarios al inicio del contenido
-		cleanedContent = cleanedContent.replace(/^\s*\n+/g, '');
-		
-		return `<h1 class="notion-page-title">${titleHtml}</h1>${cleanedContent}`;
+		// Return content as-is, without adding artificial H1
+		// The page name is already provided in the JSON structure
+		return content.replace(/^\s*\n+/g, '');
 	}
 
 	/**
