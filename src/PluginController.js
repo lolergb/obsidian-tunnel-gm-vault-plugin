@@ -701,15 +701,15 @@ export class PluginController {
 			}
 		}
 		
-		return imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+		return imageFiles; // Keep original vault order
 	}
 
 	/**
-	 * Obtiene los archivos de imagen de una carpeta y retorna información para el renderer.
+	 * Gets image files from a folder and returns info for the renderer.
 	 * 
 	 * @private
-	 * @param {import('obsidian').TFolder} folder - Carpeta a escanear
-	 * @returns {Promise<Array<{name: string, path: string}>>} Array de objetos con nombre y ruta
+	 * @param {import('obsidian').TFolder} folder - Folder to scan
+	 * @returns {Promise<Array<{name: string, path: string}>>} Array of name/path objects
 	 */
 	async _getImageFilesFromFolder(folder) {
 		const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
@@ -720,8 +720,7 @@ export class PluginController {
 			if (child instanceof TFile) {
 				const ext = child.extension.toLowerCase();
 				if (imageExtensions.includes(ext)) {
-					// Codificar el path para la URL (encodeURI codifica espacios pero mantiene las barras)
-					// Necesitamos codificar cada segmento del path por separado
+					// Encode path segments separately for URL
 					const pathSegments = child.path.split('/');
 					const encodedSegments = pathSegments.map(segment => encodeURIComponent(segment));
 					const encodedPath = encodedSegments.join('/');
@@ -734,11 +733,11 @@ export class PluginController {
 			}
 		}
 		
-		return images.sort((a, b) => a.name.localeCompare(b.name));
+		return images; // Keep original vault order
 	}
 
 	/**
-	 * Carga la configuración guardada.
+	 * Loads saved settings.
 	 * 
 	 * @private
 	 * @returns {Promise<void>}

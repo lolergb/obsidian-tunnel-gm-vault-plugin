@@ -159,9 +159,7 @@ export class SessionParser {
 			}
 		}
 		
-		// Sort alphabetically
-		files.sort((a, b) => a.name.localeCompare(b.name));
-		folders.sort((a, b) => a.name.localeCompare(b.name));
+		// Keep original vault order (no sorting)
 		
 		// Add files as pages (except session file if it exists)
 		for (const file of files) {
@@ -216,7 +214,7 @@ export class SessionParser {
 			}
 		}
 		
-		return imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+		return imageFiles; // Keep original vault order
 	}
 
 	/**

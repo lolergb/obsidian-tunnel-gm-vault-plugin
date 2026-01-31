@@ -152,11 +152,9 @@ export class VaultExporter {
 			}
 		}
 		
-		// Ordenar alfabéticamente
-		files.sort((a, b) => a.name.localeCompare(b.name));
-		folders.sort((a, b) => a.name.localeCompare(b.name));
+		// Keep original vault order (no sorting)
 		
-		// Exportar archivos como páginas
+		// Export files as pages
 		for (const file of files) {
 			// Excluir el archivo de sesión
 			if (sessionFile && file.path === sessionFile.path) {
@@ -719,7 +717,7 @@ export class VaultExporter {
 			}
 		}
 		
-		return imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+		return imageFiles; // Keep original vault order
 	}
 
 	/**
