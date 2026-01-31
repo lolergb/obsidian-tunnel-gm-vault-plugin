@@ -682,11 +682,61 @@ export class PluginController {
 	}
 
 	/**
-	 * Obtiene los archivos de imagen de una carpeta.
+	 * Gets the file sort order from Obsidian's configuration.
+	 *
+	 * @private
+	 * @returns {string} Sort order
+	 */
+	_getFileSortOrder() {
+		const sortOrder = this.app.vault.getConfig?.('fileSortOrder') 
+			|| this.app.vault.config?.fileSortOrder
+			|| 'alphabetical';
+		return sortOrder;
+	}
+
+	/**
+	 * Sorts an array of files/folders according to Obsidian's file sort order setting.
+	 *
+	 * @private
+	 * @param {Array} items - Array of TFile or TFolder objects
+	 * @returns {Array} Sorted array
+	 */
+	_sortByObsidianConfig(items) {
+		const sortOrder = this._getFileSortOrder();
+		const sorted = [...items];
+		
+		switch (sortOrder) {
+			case 'alphabetical':
+				sorted.sort((a, b) => a.name.localeCompare(b.name));
+				break;
+			case 'alphabeticalReverse':
+				sorted.sort((a, b) => b.name.localeCompare(a.name));
+				break;
+			case 'byModifiedTime':
+				sorted.sort((a, b) => (b.stat?.mtime || 0) - (a.stat?.mtime || 0));
+				break;
+			case 'byModifiedTimeReverse':
+				sorted.sort((a, b) => (a.stat?.mtime || 0) - (b.stat?.mtime || 0));
+				break;
+			case 'byCreatedTime':
+				sorted.sort((a, b) => (b.stat?.ctime || 0) - (a.stat?.ctime || 0));
+				break;
+			case 'byCreatedTimeReverse':
+				sorted.sort((a, b) => (a.stat?.ctime || 0) - (b.stat?.ctime || 0));
+				break;
+			default:
+				sorted.sort((a, b) => a.name.localeCompare(b.name));
+		}
+		
+		return sorted;
+	}
+
+	/**
+	 * Gets image files from a folder.
 	 * 
 	 * @private
-	 * @param {import('obsidian').TFolder} folder - Carpeta a escanear
-	 * @returns {Promise<import('obsidian').TFile[]>} Array de archivos de imagen
+	 * @param {import('obsidian').TFolder} folder - Folder to scan
+	 * @returns {Promise<import('obsidian').TFile[]>} Array of image files
 	 */
 	async _getImageFiles(folder) {
 		const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
@@ -701,7 +751,7 @@ export class PluginController {
 			}
 		}
 		
-		return imageFiles.reverse(); // Reverse to match Obsidian UI order
+		return this._sortByObsidianConfig(imageFiles);
 	}
 
 	/**
@@ -713,27 +763,33 @@ export class PluginController {
 	 */
 	async _getImageFilesFromFolder(folder) {
 		const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
-		const images = [];
+		const imageFiles = [];
 		const baseUrl = this.publicUrl || this.tunnelManager?.getPublicUrl() || `http://localhost:${this.port}`;
 		
+		// First collect TFile objects
 		for (const child of folder.children || []) {
 			if (child instanceof TFile) {
 				const ext = child.extension.toLowerCase();
 				if (imageExtensions.includes(ext)) {
-					// Encode path segments separately for URL
-					const pathSegments = child.path.split('/');
-					const encodedSegments = pathSegments.map(segment => encodeURIComponent(segment));
-					const encodedPath = encodedSegments.join('/');
-					
-					images.push({
-						name: child.name,
-						path: `${baseUrl}/images/${encodedPath}`
-					});
+					imageFiles.push(child);
 				}
 			}
 		}
 		
-		return images.reverse(); // Reverse to match Obsidian UI order
+		// Sort according to Obsidian config (while we still have TFile objects with stat)
+		const sortedFiles = this._sortByObsidianConfig(imageFiles);
+		
+		// Transform to {name, path} objects
+		return sortedFiles.map(file => {
+			const pathSegments = file.path.split('/');
+			const encodedSegments = pathSegments.map(segment => encodeURIComponent(segment));
+			const encodedPath = encodedSegments.join('/');
+			
+			return {
+				name: file.name,
+				path: `${baseUrl}/images/${encodedPath}`
+			};
+		});
 	}
 
 	/**

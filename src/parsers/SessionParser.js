@@ -29,6 +29,59 @@ export class SessionParser {
 	}
 
 	/**
+	 * Gets the file sort order from Obsidian's configuration.
+	 *
+	 * @private
+	 * @returns {string} Sort order: 'alphabetical', 'alphabeticalReverse', 'byModifiedTime', 'byModifiedTimeReverse', 'byCreatedTime', 'byCreatedTimeReverse'
+	 */
+	_getFileSortOrder() {
+		// Try to get from vault config
+		const sortOrder = this.app.vault.getConfig?.('fileSortOrder') 
+			|| this.app.vault.config?.fileSortOrder
+			|| 'alphabetical';
+		return sortOrder;
+	}
+
+	/**
+	 * Sorts an array of files/folders according to Obsidian's file sort order setting.
+	 *
+	 * @private
+	 * @param {Array} items - Array of TFile or TFolder objects
+	 * @returns {Array} Sorted array
+	 */
+	_sortByObsidianConfig(items) {
+		const sortOrder = this._getFileSortOrder();
+		
+		const sorted = [...items];
+		
+		switch (sortOrder) {
+			case 'alphabetical':
+				sorted.sort((a, b) => a.name.localeCompare(b.name));
+				break;
+			case 'alphabeticalReverse':
+				sorted.sort((a, b) => b.name.localeCompare(a.name));
+				break;
+			case 'byModifiedTime':
+				sorted.sort((a, b) => (b.stat?.mtime || 0) - (a.stat?.mtime || 0));
+				break;
+			case 'byModifiedTimeReverse':
+				sorted.sort((a, b) => (a.stat?.mtime || 0) - (b.stat?.mtime || 0));
+				break;
+			case 'byCreatedTime':
+				sorted.sort((a, b) => (b.stat?.ctime || 0) - (a.stat?.ctime || 0));
+				break;
+			case 'byCreatedTimeReverse':
+				sorted.sort((a, b) => (a.stat?.ctime || 0) - (b.stat?.ctime || 0));
+				break;
+			default:
+				// Default to alphabetical
+				sorted.sort((a, b) => a.name.localeCompare(b.name));
+		}
+		
+		return sorted;
+	}
+
+	/**
 	 * Parses the vault from the selected session folder.
 	 *
 	 * Structure mirrors vault folders and files:
@@ -159,12 +212,12 @@ export class SessionParser {
 			}
 		}
 		
-		// Reverse to match Obsidian UI order
-		files.reverse();
-		folders.reverse();
+		// Sort according to Obsidian's file sort order setting
+		const sortedFiles = this._sortByObsidianConfig(files);
+		const sortedFolders = this._sortByObsidianConfig(folders);
 		
 		// Add files as pages (except session file if it exists)
-		for (const file of files) {
+		for (const file of sortedFiles) {
 			if (sessionFile && file.path === sessionFile.path) {
 				continue;
 			}
@@ -177,7 +230,7 @@ export class SessionParser {
 		}
 		
 		// Add folders as subcategories or special pages (if they only have images)
-		for (const subFolder of folders) {
+		for (const subFolder of sortedFolders) {
 			const imageFiles = await this._getImageFiles(subFolder);
 			const hasOnlyImages = imageFiles.length > 0 && 
 				subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
@@ -216,7 +269,7 @@ export class SessionParser {
 			}
 		}
 		
-		return imageFiles.reverse(); // Reverse to match Obsidian UI order
+		return this._sortByObsidianConfig(imageFiles);
 	}
 
 	/**

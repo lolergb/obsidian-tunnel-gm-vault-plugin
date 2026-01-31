@@ -53,6 +53,56 @@ export class VaultExporter {
 	}
 
 	/**
+	 * Gets the file sort order from Obsidian's configuration.
+	 *
+	 * @private
+	 * @returns {string} Sort order
+	 */
+	_getFileSortOrder() {
+		const sortOrder = this.app.vault.getConfig?.('fileSortOrder') 
+			|| this.app.vault.config?.fileSortOrder
+			|| 'alphabetical';
+		return sortOrder;
+	}
+
+	/**
+	 * Sorts an array of files/folders according to Obsidian's file sort order setting.
+	 *
+	 * @private
+	 * @param {Array} items - Array of TFile or TFolder objects
+	 * @returns {Array} Sorted array
+	 */
+	_sortByObsidianConfig(items) {
+		const sortOrder = this._getFileSortOrder();
+		const sorted = [...items];
+		
+		switch (sortOrder) {
+			case 'alphabetical':
+				sorted.sort((a, b) => a.name.localeCompare(b.name));
+				break;
+			case 'alphabeticalReverse':
+				sorted.sort((a, b) => b.name.localeCompare(a.name));
+				break;
+			case 'byModifiedTime':
+				sorted.sort((a, b) => (b.stat?.mtime || 0) - (a.stat?.mtime || 0));
+				break;
+			case 'byModifiedTimeReverse':
+				sorted.sort((a, b) => (a.stat?.mtime || 0) - (b.stat?.mtime || 0));
+				break;
+			case 'byCreatedTime':
+				sorted.sort((a, b) => (b.stat?.ctime || 0) - (a.stat?.ctime || 0));
+				break;
+			case 'byCreatedTimeReverse':
+				sorted.sort((a, b) => (a.stat?.ctime || 0) - (b.stat?.ctime || 0));
+				break;
+			default:
+				sorted.sort((a, b) => a.name.localeCompare(b.name));
+		}
+		
+		return sorted;
+	}
+
+	/**
 	 * Exports the vault from the selected session folder.
 	 *
 	 * @param {import('obsidian').TFolder} sessionFolder - Session folder
@@ -152,12 +202,12 @@ export class VaultExporter {
 			}
 		}
 		
-		// Reverse to match Obsidian UI order
-		files.reverse();
-		folders.reverse();
+		// Sort according to Obsidian's file sort order setting
+		const sortedFiles = this._sortByObsidianConfig(files);
+		const sortedFolders = this._sortByObsidianConfig(folders);
 		
 		// Export files as pages
-		for (const file of files) {
+		for (const file of sortedFiles) {
 			// Excluir el archivo de sesión
 			if (sessionFile && file.path === sessionFile.path) {
 				continue;
@@ -167,8 +217,8 @@ export class VaultExporter {
 			items.push(pageItem);
 		}
 		
-		// Exportar subcarpetas
-		for (const subFolder of folders) {
+		// Export subfolders
+		for (const subFolder of sortedFolders) {
 			// Verificar si la carpeta solo contiene imágenes
 			const imageFiles = await this._getImageFiles(subFolder);
 			const hasOnlyImages = imageFiles.length > 0 && 
@@ -719,7 +769,7 @@ export class VaultExporter {
 			}
 		}
 		
-		return imageFiles.reverse(); // Reverse to match Obsidian UI order
+		return this._sortByObsidianConfig(imageFiles);
 	}
 
 	/**
