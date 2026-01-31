@@ -1,5 +1,5 @@
 
-**Related**: [[buying-time|Buying Time]]
+**Related**: [[a1 buying-time|Buying Time]]
 
 > 📌 We use SRD 5e/2024 as the baseline and, when it serves the tone better, monsters from your PDFs (MM / Volo / Mordenkainen Multiverse) as direct reskins or swaps.
 

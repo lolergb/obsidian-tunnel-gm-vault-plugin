@@ -190,52 +190,46 @@ export class VaultExporter {
 		const items = [];
 		const children = folder.children || [];
 		
-		// Separar archivos y carpetas
-		const files = [];
-		const folders = [];
+		// Filter to only include folders and markdown files
+		const validChildren = children.filter(child => 
+			child instanceof TFolder || (child instanceof TFile && child.extension === 'md')
+		);
 		
-		for (const child of children) {
-			if (child instanceof TFolder) {
-				folders.push(child);
-			} else if (child instanceof TFile && child.extension === 'md') {
-				files.push(child);
-			}
-		}
+		// Sort files and folders together according to Obsidian's setting
+		const sortedItems = this._sortByObsidianConfig(validChildren);
 		
-		// Sort according to Obsidian's file sort order setting
-		const sortedFiles = this._sortByObsidianConfig(files);
-		const sortedFolders = this._sortByObsidianConfig(folders);
-		
-		// Export files as pages
-		for (const file of sortedFiles) {
-			// Excluir el archivo de sesión
-			if (sessionFile && file.path === sessionFile.path) {
-				continue;
-			}
-			
-			const pageItem = await this._exportPage(file, folder);
-			items.push(pageItem);
-		}
-		
-		// Export subfolders
-		for (const subFolder of sortedFolders) {
-			// Verificar si la carpeta solo contiene imágenes
-			const imageFiles = await this._getImageFiles(subFolder);
-			const hasOnlyImages = imageFiles.length > 0 && 
-				subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
-				subFolder.children.filter(c => c.children !== undefined).length === 0;
-			
-			if (hasOnlyImages) {
-				// Crear una página de galería de imágenes
-				const galleryItem = await this._exportImageGallery(subFolder, imageFiles);
-				items.push(galleryItem);
+		// Process items in sorted order (mixed files and folders)
+		for (const item of sortedItems) {
+			if (item instanceof TFolder) {
+				// It's a folder
+				const subFolder = item;
+				const imageFiles = await this._getImageFiles(subFolder);
+				const hasOnlyImages = imageFiles.length > 0 && 
+					subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
+					subFolder.children.filter(c => c.children !== undefined).length === 0;
+				
+				if (hasOnlyImages) {
+					// Image gallery page
+					const galleryItem = await this._exportImageGallery(subFolder, imageFiles);
+					items.push(galleryItem);
+				} else {
+					// Normal folder: create subcategory
+					const subCategory = await this._exportFolder(subFolder, null);
+					items.push({
+						type: 'category',
+						...subCategory
+					});
+				}
 			} else {
-				// Carpeta normal: crear subcategoría
-				const subCategory = await this._exportFolder(subFolder, null);
-				items.push({
-					type: 'category',
-					...subCategory
-				});
+				// It's a file
+				const file = item;
+				// Exclude session file
+				if (sessionFile && file.path === sessionFile.path) {
+					continue;
+				}
+				
+				const pageItem = await this._exportPage(file, folder);
+				items.push(pageItem);
 			}
 		}
 		

@@ -7,7 +7,7 @@
 > 🎬 **Visual or musical tone**: Crackling fire · Distant screams · Breaking wood  
 > 🕯️ **Space type**: Improvised fortified farm: fences, stables, main house
 
-**Related**: [[buying-time|Buying Time]] ← [[E1 The Watched Crossing|E1 — The Watched Crossing]] → [[E3 The Forest Cementery|E3 — The Forest Cemetery]]
+**Related**: [[a1 buying-time|Buying Time]] ← [[E1 The Watched Crossing|E1 — The Watched Crossing]] → [[E3 The Forest Cementery|E3 — The Forest Cemetery]]
 
 ## 📘 **Cinematic summary (DM only)**
 The PCs reach the **farm** after the attack has **already begun**.  

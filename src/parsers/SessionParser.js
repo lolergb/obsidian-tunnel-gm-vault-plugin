@@ -198,53 +198,46 @@ export class SessionParser {
 	async _scanFolder(folder, category, sessionFile) {
 		const children = folder.children || [];
 		
-		// Separate files and folders
-		const files = [];
-		const folders = [];
+		// Filter to only include folders and markdown files
+		const items = children.filter(child => 
+			child.children !== undefined || child.extension === 'md'
+		);
 		
-		for (const child of children) {
-			if (child.children !== undefined) {
-				// It's a folder (TFolder has .children)
-				folders.push(child);
-			} else if (child.extension === 'md') {
-				// It's a markdown file
-				files.push(child);
-			}
-		}
+		// Sort files and folders together according to Obsidian's setting
+		const sortedItems = this._sortByObsidianConfig(items);
 		
-		// Sort according to Obsidian's file sort order setting
-		const sortedFiles = this._sortByObsidianConfig(files);
-		const sortedFolders = this._sortByObsidianConfig(folders);
-		
-		// Add files as pages (except session file if it exists)
-		for (const file of sortedFiles) {
-			if (sessionFile && file.path === sessionFile.path) {
-				continue;
-			}
-			
-			const pageName = await this._getPageName(file);
-			const slug = slugify(file.basename);
-			
-			const page = new Page(pageName, slug, []);
-			category.addPage(page);
-		}
-		
-		// Add folders as subcategories or special pages (if they only have images)
-		for (const subFolder of sortedFolders) {
-			const imageFiles = await this._getImageFiles(subFolder);
-			const hasOnlyImages = imageFiles.length > 0 && 
-				subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
-				subFolder.children.filter(c => c.children !== undefined).length === 0;
-			
-			if (hasOnlyImages) {
-				const folderSlug = slugify(subFolder.name);
-				const page = new Page(subFolder.name, folderSlug, ['image']);
-				category.addPage(page);
-			} else {
-				const subCategory = new Category(subFolder.name);
-				category.addCategory(subCategory);
+		// Process items in sorted order (mixed files and folders)
+		for (const item of sortedItems) {
+			if (item.children !== undefined) {
+				// It's a folder
+				const subFolder = item;
+				const imageFiles = await this._getImageFiles(subFolder);
+				const hasOnlyImages = imageFiles.length > 0 && 
+					subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
+					subFolder.children.filter(c => c.children !== undefined).length === 0;
 				
-				await this._scanFolder(subFolder, subCategory, sessionFile);
+				if (hasOnlyImages) {
+					const folderSlug = slugify(subFolder.name);
+					const page = new Page(subFolder.name, folderSlug, ['image']);
+					category.addPage(page);
+				} else {
+					const subCategory = new Category(subFolder.name);
+					category.addCategory(subCategory);
+					
+					await this._scanFolder(subFolder, subCategory, sessionFile);
+				}
+			} else {
+				// It's a file
+				const file = item;
+				if (sessionFile && file.path === sessionFile.path) {
+					continue;
+				}
+				
+				const pageName = await this._getPageName(file);
+				const slug = slugify(file.basename);
+				
+				const page = new Page(pageName, slug, []);
+				category.addPage(page);
 			}
 		}
 	}
