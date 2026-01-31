@@ -56,15 +56,11 @@ This becomes:
 
 ### 1. Installation
 
-1. **Install cloudflared** (required for HTTPS tunnel):
-   - **macOS**: `brew install cloudflared`
-   - **Linux**: Download from https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/
-   - **Windows**: Download the executable from the same URL
-   - Verify: `cloudflared --version`
+1. Copy this folder to `.obsidian/plugins/gm-vault-exporter/` in your vault
+2. Reload Obsidian
+3. Enable the plugin in Settings → Plugins
 
-2. Copy this folder to `.obsidian/plugins/gm-vault-exporter/` in your vault
-3. Reload Obsidian
-4. Enable the plugin in Settings → Plugins
+> 💡 **Note**: The plugin will automatically download `cloudflared` (Cloudflare's tunnel tool) the first time you enable the server. No manual installation required!
 
 ### 2. Select a Session Page
 
@@ -90,8 +86,8 @@ In GM Vault (Owlbear Rodeo):
 
 > 💡 **Note**:
 > - The public URL is **HTTPS** (secure) and temporary (changes each time you start the server)
-> - It’s **free** and **no sign-up**
-> - Requires **cloudflared** to be installed
+> - It's **free** and **no sign-up** required
+> - `cloudflared` is downloaded automatically on first use (~25MB)
 > - This is the only URL you need (the local HTTP server is internal only)
 
 ### 5. View the public URL (when needed)
@@ -113,7 +109,7 @@ Run the command: **"Disable GM Vault access"**
   - The public URL is temporary and randomly generated (e.g. `https://random-name.trycloudflare.com`)
   - It only works while the server is running
   - Free and no registration
-  - Requires cloudflared on your system
+  - `cloudflared` is downloaded automatically on first use
 - ✅ **CORS is enabled** so the browser can connect
   - Includes Private Network Access support (Chrome)
 - ✅ The server is **off by default**
@@ -156,7 +152,7 @@ The plugin uses a clear, modular design:
 
 - **`PluginController`**: Orchestrates modules and commands
 - **`ServerManager`**: Manages the HTTP server (start/stop/routes)
-- **`TunnelManager`**: Manages the public HTTPS tunnel with cloudflared
+- **`TunnelManager`**: Manages the public HTTPS tunnel with cloudflared (auto-download)
 - **`SessionParser`**: Reads and parses Obsidian notes → domain models
 - **`GMVaultJSONBuilder`**: Converts models → GM Vault JSON
 - **`MarkdownRenderer`**: Converts Markdown → HTML

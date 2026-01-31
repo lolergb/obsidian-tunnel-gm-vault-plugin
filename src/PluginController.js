@@ -70,9 +70,17 @@ export class PluginController {
 	 * @returns {Promise<void>}
 	 */
 	async initialize() {
+		// Get plugin directory for storing cloudflared binary
+		const pluginDir = this._getPluginDir();
+		
+		// Progress callback for tunnel operations
+		const onTunnelProgress = (message) => {
+			new Notice(message, 3000);
+		};
+		
 		// Initialize modules
 		this.serverManager = new ServerManager(this.port);
-		this.tunnelManager = new TunnelManager(this.port);
+		this.tunnelManager = new TunnelManager(this.port, pluginDir, onTunnelProgress);
 		this.sessionParser = new SessionParser(this.app);
 		this.jsonBuilder = new GMVaultJSONBuilder(`http://localhost:${this.port}`);
 		this.markdownRenderer = new MarkdownRenderer(`http://localhost:${this.port}`);
@@ -83,6 +91,38 @@ export class PluginController {
 		
 		// Load saved settings
 		await this._loadSettings();
+	}
+
+	/**
+	 * Gets the absolute path to the plugin directory.
+	 * @private
+	 * @returns {string|null} Plugin directory path or null
+	 */
+	_getPluginDir() {
+		try {
+			// Get vault base path
+			const adapter = this.app.vault.adapter;
+			const basePath = adapter.basePath || adapter.getBasePath?.();
+			
+			if (!basePath) {
+				console.warn('[PluginController] Could not get vault base path');
+				return null;
+			}
+			
+			// Get plugin manifest directory (relative path like ".obsidian/plugins/plugin-id")
+			const manifestDir = this.plugin.manifest.dir;
+			if (!manifestDir) {
+				console.warn('[PluginController] Could not get plugin manifest directory');
+				return null;
+			}
+			
+			// Combine paths
+			// Use forward slashes and let Node.js handle it
+			return `${basePath}/${manifestDir}`;
+		} catch (error) {
+			console.error('[PluginController] Error getting plugin directory:', error);
+			return null;
+		}
 	}
 
 	/**

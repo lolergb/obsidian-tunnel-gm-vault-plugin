@@ -8,4 +8,6 @@ Untitled.base
 main.js
 *.zip
 *.json.bak
-vault/obsidian-rpg-vault-template-main/
+
+# Vault de prueba (no versionar)
+vault/
