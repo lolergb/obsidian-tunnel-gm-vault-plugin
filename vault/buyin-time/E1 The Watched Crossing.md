@@ -9,7 +9,7 @@
 
 ![fdasf|400](https://owlbear-gm-vault.netlify.app/img/cover-promotion.jpg)
 
-**Related**: [[buying-time|Buying Time]] → [[E2-The-Burning-Farm|E2 — The Burning Farm]]
+**Related**: [[buying-time|Buying Time]] → [[E2 The Burning Farm|E2 — The Burning Farm]]
 
 ## 📘 **Cinematic summary (DM only)**
 The PCs emerge from the forest after the events of *The Twilight Edge* and reach a **rural crossing** connecting several local routes.  

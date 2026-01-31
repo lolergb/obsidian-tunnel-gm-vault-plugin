@@ -1,3 +1,4 @@
+
 # The forest cementery
 
 > 🔥 🎭 **Emotion**: Heavy silence → Revelation → Somber resolve  
@@ -7,7 +8,7 @@
 > 🎬 **Visual or musical tone**: Low wind in branches · Creaking wood · No music  
 > 🕯️ **Space type**: Ancient forest cemetery, crooked stones and broken paths
 
-**Related**: [[buying-time|Buying Time]] ← [[E2-The-Burning-Farm|E2 — The Burning Farm]] → [[E4-The-Mountain-Pass|E4 — The Mountain Pass]]
+**Related**: [[buying-time|Buying Time]] ← [[E2 The Burning Farm|E2 — The Burning Farm]] → [[E4 The Mountain Pass|E4 — The Mountain Pass]]
 
 ## 📘 **Cinematic summary (DM only)**
 Following fresh tracks from the farm, the PCs reach an **old, secluded cemetery** — forgotten and **desecrated**.

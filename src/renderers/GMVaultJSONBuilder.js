@@ -1,13 +1,13 @@
 /**
- * @fileoverview Constructor que convierte modelos de dominio (Session, Category, Page)
- * en el formato JSON esperado por GM Vault.
- * 
- * El JSON resultante sigue el esquema de GM Vault (formato items[]):
- * - categories: array de categorías raíz
- * - Cada categoría tiene name e items[]
- * - Cada item tiene type ('page' o 'category'), name, y propiedades específicas
- * - Las páginas tienen url, y opcionalmente blockTypes, visibleToPlayers
- * - Las categorías tienen items[] (recursivo)
+ * @fileoverview Builder that converts domain models (Session, Category, Page)
+ * into the JSON format expected by GM Vault.
+ *
+ * The resulting JSON follows the GM Vault schema (items[] format):
+ * - categories: array of root categories
+ * - Each category has name and items[]
+ * - Each item has type ('page' or 'category'), name, and specific properties
+ * - Pages have url, and optionally blockTypes, visibleToPlayers
+ * - Categories have items[] (recursive)
  */
 
 import { Session } from '../models/Session.js';
@@ -15,15 +15,15 @@ import { Category } from '../models/Category.js';
 import { Page } from '../models/Page.js';
 
 /**
- * Constructor que convierte modelos de dominio a JSON de GM Vault.
- * 
+ * Builder that converts domain models to GM Vault JSON.
+ *
  * @class GMVaultJSONBuilder
  */
 export class GMVaultJSONBuilder {
 	/**
-	 * Crea una instancia de GMVaultJSONBuilder.
-	 * 
-	 * @param {string} baseUrl - URL base para las páginas (ej: "http://localhost:3000")
+	 * Creates a GMVaultJSONBuilder instance.
+	 *
+	 * @param {string} baseUrl - Base URL for pages (e.g. "http://localhost:3000")
 	 */
 	constructor(baseUrl = 'http://localhost:3000') {
 		/** @type {string} */
@@ -31,20 +31,20 @@ export class GMVaultJSONBuilder {
 	}
 
 	/**
-	 * Actualiza la URL base para las páginas.
-	 * 
-	 * @param {string} baseUrl - Nueva URL base
+	 * Updates the base URL for pages.
+	 *
+	 * @param {string} baseUrl - New base URL
 	 */
 	setBaseUrl(baseUrl) {
 		this.baseUrl = baseUrl;
 	}
 
 	/**
-	 * Convierte un modelo Session en JSON compatible con GM Vault.
-	 * Usa el nuevo formato items[] para simplicidad y orden implícito.
-	 * 
-	 * @param {Session} session - Modelo de sesión a convertir
-	 * @returns {Object} JSON compatible con GM Vault
+	 * Converts a Session model to GM Vault–compatible JSON.
+	 * Uses the items[] format for simplicity and implicit order.
+	 *
+	 * @param {Session} session - Session model to convert
+	 * @returns {Object} GM Vault–compatible JSON
 	 */
 	buildJSON(session) {
 		return {
@@ -55,21 +55,21 @@ export class GMVaultJSONBuilder {
 	}
 
 	/**
-	 * Convierte un modelo Category en JSON con formato items[].
-	 * 
+	 * Converts a Category model to JSON with items[] format.
+	 *
 	 * @private
-	 * @param {Category} category - Categoría a convertir
-	 * @returns {Object} JSON de categoría
+	 * @param {Category} category - Category to convert
+	 * @returns {Object} Category JSON
 	 */
 	_buildCategoryJSON(category) {
 		const items = [];
 
-		// Añadir páginas como items de tipo 'page'
+		// Add pages as 'page' items
 		for (const page of category.pages) {
 			items.push(this._buildPageItemJSON(page));
 		}
 
-		// Añadir subcategorías como items de tipo 'category'
+		// Add subcategories as 'category' items
 		for (const subCategory of category.categories) {
 			items.push(this._buildCategoryItemJSON(subCategory));
 		}
@@ -78,7 +78,7 @@ export class GMVaultJSONBuilder {
 			name: category.name
 		};
 
-		// Solo añadir items si hay contenido
+		// Only add items if there is content
 		if (items.length > 0) {
 			json.items = items;
 		}
@@ -87,11 +87,11 @@ export class GMVaultJSONBuilder {
 	}
 
 	/**
-	 * Convierte un modelo Page en un item JSON de tipo 'page'.
-	 * 
+	 * Converts a Page model to a JSON item of type 'page'.
+	 *
 	 * @private
-	 * @param {Page} page - Página a convertir
-	 * @returns {Object} JSON de item página
+	 * @param {Page} page - Page to convert
+	 * @returns {Object} Page item JSON
 	 */
 	_buildPageItemJSON(page) {
 		const item = {
@@ -100,7 +100,7 @@ export class GMVaultJSONBuilder {
 			url: `${this.baseUrl}/pages/${page.slug}`
 		};
 
-		// Añade propiedades opcionales solo si existen
+		// Add optional properties only if they exist
 		if (page.blockTypes && page.blockTypes.length > 0) {
 			item.blockTypes = page.blockTypes;
 		}
@@ -113,10 +113,10 @@ export class GMVaultJSONBuilder {
 	}
 
 	/**
-	 * Convierte un modelo Category en un item JSON de tipo 'category'.
+	 * Converts a Category model to a JSON item of type 'category'.
 	 * 
 	 * @private
-	 * @param {Category} category - Categoría a convertir
+	 * @param {Category} category - Category to convert
 	 * @returns {Object} JSON de item categoría
 	 */
 	_buildCategoryItemJSON(category) {
@@ -127,7 +127,7 @@ export class GMVaultJSONBuilder {
 			items.push(this._buildPageItemJSON(page));
 		}
 
-		// Añadir subcategorías recursivamente
+		// Add subcategories recursively
 		for (const subCategory of category.categories) {
 			items.push(this._buildCategoryItemJSON(subCategory));
 		}
@@ -137,7 +137,7 @@ export class GMVaultJSONBuilder {
 			name: category.name
 		};
 
-		// Solo añadir items si hay contenido
+		// Only add items if there is content
 		if (items.length > 0) {
 			item.items = items;
 		}
@@ -150,7 +150,7 @@ export class GMVaultJSONBuilder {
 	// ============================================
 
 	/**
-	 * Convierte un modelo Session en JSON formato legacy.
+	 * Converts a Session model to legacy JSON format.
 	 * Útil para compatibilidad con versiones anteriores de GM Vault.
 	 * 
 	 * @param {Session} session - Modelo de sesión a convertir
@@ -165,10 +165,10 @@ export class GMVaultJSONBuilder {
 	}
 
 	/**
-	 * Convierte un modelo Category en JSON formato legacy.
+	 * Converts a Category model to legacy JSON format.
 	 * 
 	 * @private
-	 * @param {Category} category - Categoría a convertir
+	 * @param {Category} category - Category to convert
 	 * @returns {Object} JSON de categoría (formato legacy)
 	 */
 	_buildLegacyCategoryJSON(category) {
@@ -192,7 +192,7 @@ export class GMVaultJSONBuilder {
 	}
 
 	/**
-	 * Convierte un modelo Page en JSON formato legacy.
+	 * Converts a Page model to legacy JSON format.
 	 * 
 	 * @private
 	 * @param {Page} page - Página a convertir

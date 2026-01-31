@@ -1,11 +1,11 @@
 /**
- * @fileoverview Controlador principal del plugin.
- * 
- * Responsabilidades:
- * - Conectar todos los módulos
- * - Gestionar comandos de Obsidian
- * - Gestionar el estado del plugin
- * - NO contiene lógica de negocio
+ * @fileoverview Main plugin controller.
+ *
+ * Responsibilities:
+ * - Connect all modules
+ * - Handle Obsidian commands
+ * - Manage plugin state
+ * - Does NOT contain business logic
  */
 
 import { Notice, SuggestModal, TFile, TFolder } from 'obsidian';
@@ -18,16 +18,16 @@ import { MarkdownRenderer } from './renderers/MarkdownRenderer.js';
 import { VaultExporter } from './exporters/VaultExporter.js';
 
 /**
- * Controlador principal que orquesta todos los módulos del plugin.
- * 
+ * Main controller that orchestrates all plugin modules.
+ *
  * @class PluginController
  */
 export class PluginController {
 	/**
-	 * Crea una instancia de PluginController.
-	 * 
-	 * @param {import('obsidian').App} app - Aplicación de Obsidian
-	 * @param {import('obsidian').Plugin} plugin - Instancia del plugin
+	 * Creates a PluginController instance.
+	 *
+	 * @param {import('obsidian').App} app - Obsidian app
+	 * @param {import('obsidian').Plugin} plugin - Plugin instance
 	 */
 	constructor(app, plugin) {
 		/** @type {import('obsidian').App} */
@@ -65,12 +65,12 @@ export class PluginController {
 	}
 
 	/**
-	 * Inicializa el plugin y registra comandos.
-	 * 
+	 * Initializes the plugin and registers commands.
+	 *
 	 * @returns {Promise<void>}
 	 */
 	async initialize() {
-		// Inicializa módulos
+		// Initialize modules
 		this.serverManager = new ServerManager(this.port);
 		this.tunnelManager = new TunnelManager(this.port);
 		this.sessionParser = new SessionParser(this.app);
@@ -78,16 +78,16 @@ export class PluginController {
 		this.markdownRenderer = new MarkdownRenderer(`http://localhost:${this.port}`);
 		this.vaultExporter = new VaultExporter(this.app);
 		
-		// Registra comandos de Obsidian
+		// Register Obsidian commands
 		this._registerCommands();
 		
-		// Carga configuración guardada
+		// Load saved settings
 		await this._loadSettings();
 	}
 
 	/**
-	 * Limpia recursos cuando el plugin se desactiva.
-	 * 
+	 * Cleans up resources when the plugin is disabled.
+	 *
 	 * @returns {Promise<void>}
 	 */
 	async cleanup() {
@@ -100,8 +100,8 @@ export class PluginController {
 	}
 
 	/**
-	 * Registra comandos de Obsidian.
-	 * 
+	 * Registers Obsidian commands.
+	 *
 	 * @private
 	 */
 	_registerCommands() {
@@ -149,7 +149,7 @@ export class PluginController {
 	 */
 	async enableServer() {
 		if (!this.currentSessionFolder) {
-			new Notice('Por favor, selecciona primero una carpeta de sesión usando el comando "Seleccionar carpeta de sesión"');
+			new Notice('Please select a session folder first using the "Select session folder" command');
 			return;
 		}
 
@@ -162,7 +162,7 @@ export class PluginController {
 			await new Promise(resolve => setTimeout(resolve, 500));
 			
 			// Inicia el túnel HTTPS público
-			new Notice('⏳ Creando túnel HTTPS público...');
+			new Notice('⏳ Creating public HTTPS tunnel...');
 			const publicUrl = await this.tunnelManager.start();
 			this.publicUrl = publicUrl;
 			
@@ -173,14 +173,14 @@ export class PluginController {
 			this.markdownRenderer.setBaseUrl(publicUrl);
 			
 			// Notifica al usuario con la URL HTTPS pública (principal)
-			new Notice(`✅ Acceso a GM Vault habilitado (HTTPS):\n${publicUrl}\n\nUsa esta URL en GM Vault:\n${publicUrl}/gm-vault`, 10000);
+			new Notice(`✅ GM Vault access enabled (HTTPS):\n${publicUrl}\n\nUse this URL in GM Vault:\n${publicUrl}/gm-vault`, 10000);
 			
 			await this._saveSettings();
 			
 			// Copiar automáticamente la URL de GM-vault al portapapeles
 			await this.copyGmVaultUrl();
 		} catch (error) {
-			new Notice(`❌ Error al iniciar el servidor: ${error.message}`);
+			new Notice(`❌ Error starting server: ${error.message}`);
 		}
 	}
 
@@ -200,11 +200,11 @@ export class PluginController {
 			await this.serverManager.stop();
 			this.publicUrl = null;
 			
-			new Notice('✅ Acceso a GM Vault deshabilitado');
+			new Notice('✅ GM Vault access disabled');
 			
 			await this._saveSettings();
 		} catch (error) {
-			new Notice(`❌ Error al detener el servidor: ${error.message}`);
+			new Notice(`❌ Error stopping server: ${error.message}`);
 		}
 	}
 
@@ -222,18 +222,18 @@ export class PluginController {
 		const url = this.tunnelManager?.getPublicUrl() || this.publicUrl;
 		
 		if (!url) {
-			new Notice('❌ No hay túnel activo. Ejecuta "Habilitar acceso a GM Vault" primero.');
+			new Notice('❌ No active tunnel. Run "Enable GM Vault access" first.');
 			return;
 		}
 		
 		// Muestra la URL HTTPS en un notice con más tiempo
-		new Notice(`🌐 URL HTTPS pública del túnel:\n${url}\n\n• JSON para GM Vault: ${url}/gm-vault\n• Páginas: ${url}/pages/:slug`, 10000);
+		new Notice(`🌐 Tunnel public HTTPS URL:\n${url}\n\n• JSON for GM Vault: ${url}/gm-vault\n• Pages: ${url}/pages/:slug`, 10000);
 		
 		// También la copia al portapapeles si es posible
 		if (navigator.clipboard) {
 			try {
 				await navigator.clipboard.writeText(url);
-				new Notice('✅ URL copiada al portapapeles');
+				new Notice('✅ URL copied to clipboard');
 			} catch (e) {
 				// Ignorar errores de clipboard
 			}
@@ -249,7 +249,7 @@ export class PluginController {
 		const url = this.tunnelManager?.getPublicUrl() || this.publicUrl;
 		
 		if (!url) {
-			new Notice('❌ No hay túnel activo. Ejecuta "Habilitar acceso a GM Vault" primero.');
+			new Notice('❌ No active tunnel. Run "Enable GM Vault access" first.');
 			return;
 		}
 		
@@ -258,9 +258,9 @@ export class PluginController {
 		if (navigator.clipboard) {
 			try {
 				await navigator.clipboard.writeText(gmVaultUrl);
-				new Notice(`✅ URL GM-vault copiada al portapapeles:\n${gmVaultUrl}`);
+				new Notice(`✅ GM-vault URL copied to clipboard:\n${gmVaultUrl}`);
 			} catch (e) {
-				new Notice(`❌ Error al copiar al portapapeles: ${e.message}`);
+				new Notice(`❌ Error copying to clipboard: ${e.message}`);
 			}
 		} else {
 			// Fallback: mostrar la URL en un notice
@@ -277,12 +277,12 @@ export class PluginController {
 	 */
 	async exportVaultToJson() {
 		if (!this.currentSessionFolder) {
-			new Notice('❌ Por favor, selecciona primero una carpeta de sesión');
+			new Notice('❌ Please select a session folder first');
 			return;
 		}
 
 		try {
-			new Notice('⏳ Exportando vault...');
+			new Notice('⏳ Exporting vault...');
 			
 			// Exportar usando VaultExporter (sin opciones de imagen)
 			const json = await this.vaultExporter.exportVault(this.currentSessionFolder);
@@ -325,11 +325,11 @@ export class PluginController {
 			};
 			countPages(json.categories);
 			
-			new Notice(`✅ Vault exportado correctamente!\n\n📁 ${fileName}\n📊 ${pageCount} páginas\n💾 ${sizeKB} KB\n\n💡 Nota: Las imágenes locales se omiten. Usa URLs externas para incluir imágenes.\n\nImporta este archivo en GM Vault`, 10000);
+			new Notice(`✅ Vault exported successfully!\n\n📁 ${fileName}\n📊 ${pageCount} pages\n💾 ${sizeKB} KB\n\n💡 Note: Local images are omitted. Use external URLs to include images.\n\nImport this file in GM Vault`, 10000);
 			
 		} catch (error) {
-			console.error('Error exportando vault:', error);
-			new Notice(`❌ Error al exportar: ${error.message}`);
+			console.error('Error exporting vault:', error);
+			new Notice(`❌ Error exporting: ${error.message}`);
 		}
 	}
 
@@ -359,7 +359,7 @@ export class PluginController {
 			constructor(app, folders) {
 				super(app);
 				this.folders = folders;
-				this.setPlaceholder('Escribe para filtrar carpetas...');
+				this.setPlaceholder('Type to filter folders...');
 			}
 			
 			getSuggestions(query) {
@@ -378,7 +378,7 @@ export class PluginController {
 			
 			async onChooseSuggestion(folder, evt) {
 				controller.currentSessionFolder = folder;
-				new Notice(`✅ Carpeta de sesión seleccionada: ${folder.path}`);
+				new Notice(`✅ Session folder selected: ${folder.path}`);
 				await controller._saveSettings();
 			}
 		}
@@ -397,7 +397,7 @@ export class PluginController {
 			try {
 				if (!this.currentSessionFolder) {
 					this.serverManager.sendJSON(res, { 
-						error: 'No hay carpeta de sesión seleccionada' 
+						error: 'No session folder selected' 
 					}, 400);
 					return;
 				}
@@ -408,7 +408,7 @@ export class PluginController {
 				this.serverManager.sendJSON(res, json);
 			} catch (error) {
 				this.serverManager.sendJSON(res, { 
-					error: `Error al generar JSON: ${error.message}` 
+					error: `Error generating JSON: ${error.message}` 
 				}, 500);
 			}
 		});
@@ -435,7 +435,7 @@ export class PluginController {
 				
 				if (!file) {
 					this.serverManager.sendJSON(res, { 
-						error: `Página no encontrada: ${slug}` 
+						error: `Page not found: ${slug}` 
 					}, 404);
 					return;
 				}
@@ -452,7 +452,7 @@ export class PluginController {
 				this.serverManager.sendHTML(res, html);
 			} catch (error) {
 				this.serverManager.sendJSON(res, { 
-					error: `Error al renderizar página: ${error.message}` 
+					error: `Error rendering page: ${error.message}` 
 				}, 500);
 			}
 		});
@@ -485,7 +485,7 @@ export class PluginController {
 				
 				if (!imagePath) {
 					this.serverManager.sendJSON(res, { 
-						error: 'Path de imagen no especificado' 
+						error: 'Image path not specified' 
 					}, 400);
 					return;
 				}
@@ -494,7 +494,7 @@ export class PluginController {
 				
 				if (!file || !(file instanceof TFile)) {
 					this.serverManager.sendJSON(res, { 
-						error: `Imagen no encontrada: ${imagePath}`,
+						error: `Image not found: ${imagePath}`,
 						debug: {
 							requestedPath: imagePath,
 							rawUrl: req.url
@@ -507,7 +507,7 @@ export class PluginController {
 				const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
 				if (!imageExtensions.includes(file.extension.toLowerCase())) {
 					this.serverManager.sendJSON(res, { 
-						error: `No es un archivo de imagen: ${imagePath}` 
+						error: `Not an image file: ${imagePath}` 
 					}, 400);
 					return;
 				}
@@ -534,7 +534,7 @@ export class PluginController {
 				res.end(buffer);
 			} catch (error) {
 				this.serverManager.sendJSON(res, { 
-					error: `Error al servir imagen: ${error.message}` 
+					error: `Error serving image: ${error.message}` 
 				}, 500);
 			}
 		});

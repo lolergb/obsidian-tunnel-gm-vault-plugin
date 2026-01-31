@@ -1,12 +1,12 @@
 /**
- * @fileoverview Exportador de vault que genera un JSON compatible con GM Vault.
- * 
- * Este exportador es para el enfoque local-first:
- * - No requiere servidor HTTP
- * - Las imágenes locales se omiten (se recomienda usar URLs externas)
- * - El HTML viene pre-renderizado con estilos de Notion
- * - Los wiki links se convierten en mentions clickeables
- * - Compatible con GM Vault (formato items[] con htmlContent)
+ * @fileoverview Vault exporter that produces GM Vault–compatible JSON.
+ *
+ * This exporter is for the local-first approach:
+ * - No HTTP server required
+ * - Local images are omitted (external URLs recommended)
+ * - HTML is pre-rendered with Notion styles
+ * - Wiki links are converted to clickable mentions
+ * - Compatible with GM Vault (items[] format with htmlContent)
  */
 
 import { TFile, TFolder } from 'obsidian';
@@ -14,7 +14,7 @@ import { slugify } from '../utils/slugify.js';
 import MarkdownIt from 'markdown-it';
 
 /**
- * Genera un ID único para páginas (mismo formato que GM Vault)
+ * Generates a unique page ID (same format as GM Vault)
  * @returns {string}
  */
 function generatePageId() {
@@ -24,15 +24,15 @@ function generatePageId() {
 }
 
 /**
- * Exportador de vault a JSON con HTML embebido y mentions.
- * 
+ * Vault-to-JSON exporter with embedded HTML and mentions.
+ *
  * @class VaultExporter
  */
 export class VaultExporter {
 	/**
-	 * Crea una instancia de VaultExporter.
-	 * 
-	 * @param {import('obsidian').App} app - Instancia de la app de Obsidian
+	 * Creates a VaultExporter instance.
+	 *
+	 * @param {import('obsidian').App} app - Obsidian app instance
 	 */
 	constructor(app) {
 		/** @type {import('obsidian').App} */
@@ -46,35 +46,31 @@ export class VaultExporter {
 		});
 		
 		/**
-		 * Mapeo de nombres de archivo a información de página
+		 * Map of file names to page info
 		 * @type {Map<string, {id: string, name: string}>}
 		 */
 		this.pageMap = new Map();
 	}
 
 	/**
-	 * Exporta el vault desde la carpeta de sesión seleccionada.
-	 * 
-	 * @param {import('obsidian').TFolder} sessionFolder - Carpeta de sesión
-	 * @returns {Promise<Object>} JSON compatible con GM Vault
+	 * Exports the vault from the selected session folder.
+	 *
+	 * @param {import('obsidian').TFolder} sessionFolder - Session folder
+	 * @returns {Promise<Object>} GM Vault–compatible JSON
 	 */
 	async exportVault(sessionFolder) {
-		// Paso 1: Escanear todos los archivos y crear el mapeo de IDs
 		this.pageMap.clear();
 		await this._buildPageMap(sessionFolder);
 		
-		// Paso 2: Obtener nombre de la categoría raíz
 		const sessionFile = await this._findSessionFile(sessionFolder);
 		let rootCategoryName = sessionFile 
 			? await this._getRootCategoryName(sessionFile)
 			: sessionFolder.name;
 		
-		// Detectar si es la carpeta raíz (path vacío, "/" o name vacío/null/undefined)
 		const folderPath = (sessionFolder.path || '').trim();
 		const folderName = (sessionFolder.name || '').trim();
 		const isRootFolder = folderPath === '' || folderPath === '/' || folderName === '';
 		
-		// Si el nombre está vacío o es la carpeta raíz, usar nombre del vault o fallback
 		const isEmptyName = !rootCategoryName || 
 			(typeof rootCategoryName === 'string' && rootCategoryName.trim() === '');
 		
@@ -82,7 +78,7 @@ export class VaultExporter {
 			rootCategoryName = this._getRootCategoryNameFallback();
 		}
 		
-		// Paso 3: Exportar la estructura con mentions resueltos
+		// Export structure with resolved mentions
 		const rootCategory = await this._exportFolder(sessionFolder, sessionFile);
 		rootCategory.name = rootCategoryName;
 		

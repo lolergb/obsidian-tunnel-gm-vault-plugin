@@ -1,9 +1,9 @@
 /**
- * @fileoverview Parser que escanea el vault de Obsidian y genera una estructura
- * que refleja exactamente la jerarquía de carpetas y archivos.
- * 
- * vault = estructura de carpetas de Obsidian
- * contenido de cada página = contenido del archivo .md
+ * @fileoverview Parser that scans the Obsidian vault and produces a structure
+ * that mirrors the folder and file hierarchy.
+ *
+ * vault = Obsidian folder structure
+ * each page content = .md file content
  */
 
 import { TFile } from 'obsidian';
@@ -13,15 +13,15 @@ import { Page } from '../models/Page.js';
 import { slugify } from '../utils/slugify.js';
 
 /**
- * Parser que convierte la estructura del vault en modelos de dominio.
- * 
+ * Parser that converts vault structure into domain models.
+ *
  * @class SessionParser
  */
 export class SessionParser {
 	/**
-	 * Crea una instancia de SessionParser.
-	 * 
-	 * @param {import('obsidian').App} app - Instancia de la app de Obsidian
+	 * Creates a SessionParser instance.
+	 *
+	 * @param {import('obsidian').App} app - Obsidian app instance
 	 */
 	constructor(app) {
 		/** @type {import('obsidian').App} */
@@ -29,34 +29,34 @@ export class SessionParser {
 	}
 
 	/**
-	 * Parsea el vault desde la carpeta de sesión seleccionada.
-	 * 
-	 * La estructura refleja exactamente las carpetas y archivos del vault:
-	 * - Carpetas = categorías
-	 * - Archivos .md = páginas
-	 * 
-	 * @param {import('obsidian').TFolder} sessionFolder - Carpeta de sesión (punto de entrada)
-	 * @returns {Promise<Session>} Modelo de sesión parseado
+	 * Parses the vault from the selected session folder.
+	 *
+	 * Structure mirrors vault folders and files:
+	 * - Folders = categories
+	 * - .md files = pages
+	 *
+	 * @param {import('obsidian').TFolder} sessionFolder - Session folder (entry point)
+	 * @returns {Promise<Session>} Parsed session model
 	 */
 	async parseSession(sessionFolder) {
 		const sessionName = sessionFolder.name;
 		const session = new Session(sessionName);
 		
-		// Buscar un archivo de sesión dentro de la carpeta (opcional, para obtener el nombre del H1)
+		// Look for a session file inside the folder (optional, to get H1 name)
 		const sessionFile = await this._findSessionFile(sessionFolder);
 		
-		// Obtener el nombre para la categoría raíz
-		// Si hay un archivo de sesión, usar su primer H1, sino usar el nombre de la carpeta
+		// Get name for root category
+		// If there is a session file, use its first H1; otherwise use folder name
 		let rootCategoryName = sessionFile 
 			? await this._getRootCategoryName(sessionFile)
 			: sessionFolder.name;
 		
-		// Detectar si es la carpeta raíz (path vacío, "/" o name vacío/null/undefined)
+		// Detect if it's the root folder (empty path, "/" or empty/null/undefined name)
 		const folderPath = (sessionFolder.path || '').trim();
 		const folderName = (sessionFolder.name || '').trim();
 		const isRootFolder = folderPath === '' || folderPath === '/' || folderName === '';
 		
-		// Si el nombre está vacío o es la carpeta raíz, usar nombre del vault o fallback
+		// If name is empty or root folder, use vault name or fallback
 		const isEmptyName = !rootCategoryName || 
 			(typeof rootCategoryName === 'string' && rootCategoryName.trim() === '');
 		
@@ -64,28 +64,28 @@ export class SessionParser {
 			rootCategoryName = this._getRootCategoryNameFallback();
 		}
 		
-		// Crear la categoría raíz
+		// Create root category
 		const rootCategory = new Category(rootCategoryName);
 		session.addCategory(rootCategory);
 		
-		// Escanear la carpeta y construir la estructura
+		// Scan folder and build structure
 		await this._scanFolder(sessionFolder, rootCategory, sessionFile);
 		
 		return session;
 	}
 	
 	/**
-	 * Busca un archivo de sesión dentro de la carpeta.
-	 * Busca un archivo .md con el mismo nombre que la carpeta.
-	 * 
+	 * Finds a session file inside the folder.
+	 * Looks for a .md file with the same name as the folder.
+	 *
 	 * @private
-	 * @param {import('obsidian').TFolder} folder - Carpeta donde buscar
-	 * @returns {Promise<import('obsidian').TFile|null>} Archivo de sesión encontrado o null
+	 * @param {import('obsidian').TFolder} folder - Folder to search
+	 * @returns {Promise<import('obsidian').TFile|null>} Session file found or null
 	 */
 	async _findSessionFile(folder) {
 		for (const child of folder.children || []) {
 			if (child instanceof TFile && child.extension === 'md') {
-				// Si el archivo tiene el mismo nombre que la carpeta, es el archivo de sesión
+				// If file has same name as folder, it's the session file
 				if (child.basename === folder.name) {
 					return child;
 				}
@@ -95,10 +95,10 @@ export class SessionParser {
 	}
 	
 	/**
-	 * Obtiene un nombre amigable para la categoría raíz cuando está vacío.
-	 * Usa el nombre del vault si está disponible, sino usa "Vault".
+	 * Gets a friendly name for the root category when it's empty.
+	 * Uses vault name if available, otherwise "Vault".
 	 * @private
-	 * @returns {string} Nombre de la categoría raíz
+	 * @returns {string} Root category name
 	 */
 	_getRootCategoryNameFallback() {
 		try {
@@ -110,18 +110,18 @@ export class SessionParser {
 	}
 
 	/**
-	 * Obtiene el nombre para la categoría raíz desde el archivo de sesión.
-	 * Busca el primer H1, si no existe usa el nombre del archivo.
-	 * 
+	 * Gets the root category name from the session file.
+	 * Looks for the first H1; if none, uses the file name.
+	 *
 	 * @private
-	 * @param {import('obsidian').TFile} sessionFile - Archivo de sesión
-	 * @returns {Promise<string>} Nombre de la categoría raíz
+	 * @param {import('obsidian').TFile} sessionFile - Session file
+	 * @returns {Promise<string>} Root category name
 	 */
 	async _getRootCategoryName(sessionFile) {
 		const content = await this.app.vault.read(sessionFile);
 		const lines = content.split('\n');
 		
-		// Buscar el primer H1
+		// Find first H1
 		const h1Regex = /^#\s+(.+)$/;
 		for (const line of lines) {
 			const match = line.match(h1Regex);
@@ -130,47 +130,45 @@ export class SessionParser {
 			}
 		}
 		
-		// Si no hay H1, usar el nombre del archivo
+		// If no H1, use file name
 		return sessionFile.basename;
 	}
 	
 	/**
-	 * Escanea una carpeta y añade su contenido a la categoría.
-	 * 
+	 * Scans a folder and adds its content to the category.
+	 *
 	 * @private
-	 * @param {import('obsidian').TFolder} folder - Carpeta a escanear
-	 * @param {Category} category - Categoría donde añadir el contenido
-	 * @param {import('obsidian').TFile} sessionFile - Archivo de sesión (para excluirlo)
+	 * @param {import('obsidian').TFolder} folder - Folder to scan
+	 * @param {Category} category - Category to add content to
+	 * @param {import('obsidian').TFile} sessionFile - Session file (to exclude)
 	 */
 	async _scanFolder(folder, category, sessionFile) {
 		const children = folder.children || [];
 		
-		// Separar archivos y carpetas
+		// Separate files and folders
 		const files = [];
 		const folders = [];
 		
 		for (const child of children) {
 			if (child.children !== undefined) {
-				// Es una carpeta (TFolder tiene .children)
+				// It's a folder (TFolder has .children)
 				folders.push(child);
 			} else if (child.extension === 'md') {
-				// Es un archivo markdown
+				// It's a markdown file
 				files.push(child);
 			}
 		}
 		
-		// Ordenar alfabéticamente
+		// Sort alphabetically
 		files.sort((a, b) => a.name.localeCompare(b.name));
 		folders.sort((a, b) => a.name.localeCompare(b.name));
 		
-		// Añadir archivos como páginas (excepto el archivo de sesión si existe)
+		// Add files as pages (except session file if it exists)
 		for (const file of files) {
-			// Excluir el archivo de sesión si existe
 			if (sessionFile && file.path === sessionFile.path) {
 				continue;
 			}
 			
-			// Obtener el nombre de la página (puede ser el primer H1 del archivo)
 			const pageName = await this._getPageName(file);
 			const slug = slugify(file.basename);
 			
@@ -178,36 +176,32 @@ export class SessionParser {
 			category.addPage(page);
 		}
 		
-		// Añadir carpetas como subcategorías o páginas especiales (si solo tienen imágenes)
+		// Add folders as subcategories or special pages (if they only have images)
 		for (const subFolder of folders) {
-			// Verificar si la carpeta solo contiene imágenes
 			const imageFiles = await this._getImageFiles(subFolder);
 			const hasOnlyImages = imageFiles.length > 0 && 
 				subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
 				subFolder.children.filter(c => c.children !== undefined).length === 0;
 			
 			if (hasOnlyImages) {
-				// Crear una página especial para la carpeta de imágenes
 				const folderSlug = slugify(subFolder.name);
 				const page = new Page(subFolder.name, folderSlug, ['image']);
 				category.addPage(page);
 			} else {
-				// Carpeta normal: crear subcategoría
 				const subCategory = new Category(subFolder.name);
 				category.addCategory(subCategory);
 				
-				// Escanear recursivamente
 				await this._scanFolder(subFolder, subCategory, sessionFile);
 			}
 		}
 	}
 	
 	/**
-	 * Obtiene los archivos de imagen de una carpeta.
-	 * 
+	 * Gets image files from a folder.
+	 *
 	 * @private
-	 * @param {import('obsidian').TFolder} folder - Carpeta a escanear
-	 * @returns {Promise<import('obsidian').TFile[]>} Array de archivos de imagen
+	 * @param {import('obsidian').TFolder} folder - Folder to scan
+	 * @returns {Promise<import('obsidian').TFile[]>} Array of image files
 	 */
 	async _getImageFiles(folder) {
 		const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
@@ -226,12 +220,12 @@ export class SessionParser {
 	}
 
 	/**
-	 * Obtiene el nombre de una página desde el archivo.
-	 * Simplificado: usa directamente el basename del archivo.
-	 * 
+	 * Gets the page name from the file.
+	 * Simplified: uses the file basename directly.
+	 *
 	 * @private
-	 * @param {import('obsidian').TFile} file - Archivo de la página
-	 * @returns {Promise<string>} Nombre de la página
+	 * @param {import('obsidian').TFile} file - Page file
+	 * @returns {Promise<string>} Page name
 	 */
 	async _getPageName(file) {
 		return file.basename;

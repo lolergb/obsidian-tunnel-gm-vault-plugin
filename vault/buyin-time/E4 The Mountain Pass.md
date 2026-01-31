@@ -1,3 +1,4 @@
+
 # The mountain pass
 
 > 🔥 🎭 **Emotion**: Sustained tension → Sacrifice → Wounded hope  
@@ -7,7 +8,7 @@
 > 🎬 **Visual or musical tone**: Constant wind · Clashing steel · Silence after  
 > 🕯️ **Space type**: Narrow mountain pass with steep drop and limited visibility
 
-**Related**: [[buying-time|Buying Time]] ← [[E3-The-Forest-Cementery|E3 — The Forest Cemetery]] → [[Epilogue-What-Was-Saved|Epilogue]]
+**Related**: [[buying-time|Buying Time]] ← [[E3 The Forest Cementery|E3 — The Forest Cemetery]] → [[Epilogue-What-Was-Saved|Epilogue]]
 
 ## 📘 **Cinematic summary (DM only)**
 The PCs reach the **mountain pass** with a **column of fleeing civilians**.  

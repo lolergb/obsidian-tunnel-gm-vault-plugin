@@ -18,24 +18,24 @@
 
 # 🧭 OVERALL NARRATIVE STRUCTURE
 
-## Node 1 — Omen / Choice — [[E1-The-Watched-Crossing|The Watched Crossing]]
+## Node 1 — Omen / Choice — [[E1 The Watched Crossing|The Watched Crossing]]
 Cardo and Romero reach a rural crossing where civilians can still flee… or continue onward.  
 An enemy vanguard observes without attacking.  
 Here it is decided **who will be in danger next**.
 
-## Node 2 — Violence / Cost — [[E2-The-Burning-Farm|The Burning Farm]]
+## Node 2 — Violence / Cost — [[E2 The Burning Farm|The Burning Farm]]
 The attack has already begun.  
 Fire, smoke, and screams.  
 Saving people costs information.  
 Chasing the enemy costs lives.
 
-## Node 3 — Revelation / Scale — [[E3-The-Forest-Cementery|The Forest Cemetery]] 
+## Node 3 — Revelation / Scale — [[E3 The Forest Cementery|The Forest Cemetery]] 
 A desecrated place reveals the threat is neither local nor recent.  
 This is not a raid.  
 It is a rehearsal.  
 Here it becomes clear that fleeing only buys time.
 
-## Node 4 — Climax / Sacrifice — [[E4-The-Mountain-Pass|The Mountain Pass]]
+## Node 4 — Climax / Sacrifice — [[E4 The Mountain Pass|The Mountain Pass]]
 Civilians cross while the enemy advances.  
 Terrain matters as much as steel.  
 This is not about winning, but about **holding long enough**.
@@ -66,10 +66,10 @@ But someone lives to remember.
 
 | Encounter | Approx. CR | XP | Type | Notes |
 |----------|------------|----|------|------|
-| [[E1-The-Watched-Crossing\|E1 — The Watched Crossing]] | — | — | Social / Choice | Sets civilians and tone |
-| [[E2-The-Burning-Farm\|E2 — The Burning Farm]] | 2–3 | Variable | Combat + Rescue | Immediate cost |
-| [[E3-The-Forest-Cementery\|E3 — The Cemetery]] | Low | Low | Exploration / Revelation | Shift in scale |
-| [[E4-The-Mountain-Pass\|Climax — Mountain Pass]] | 3–4 | Milestone | Combat + Clock | Buying time |
+| [[E1 The Watched Crossing\|E1 — The Watched Crossing]] | — | — | Social / Choice | Sets civilians and tone |
+| [[E2 The Burning Farm\|E2 — The Burning Farm]] | 2–3 | Variable | Combat + Rescue | Immediate cost |
+| [[E3 The Forest Cementery\|E3 — The Cemetery]] | Low | Low | Exploration / Revelation | Shift in scale |
+| [[E4 The Mountain Pass\|Climax — Mountain Pass]] | 3–4 | Milestone | Combat + Clock | Buying time |
 | [[Epilogue-What-Was-Saved\|Epilogue]] | — | — | Narrative | Emotional closure |
 
 # 📌 FINAL DM NOTES
@@ -80,10 +80,10 @@ But someone lives to remember.
 
 # 📚 ENCOUNTERS
 
-- [[E1-The-Watched-Crossing|E1 — The Watched Crossing]]
-- [[E2-The-Burning-Farm|E2 — The Burning Farm]]
-- [[E3-The-Forest-Cementery|E3 — The Forest Cemetery]]
-- [[E4-The-Mountain-Pass|E4 — The Mountain Pass (Climax)]]
+- [[E1 The Watched Crossing|E1 — The Watched Crossing]]
+- [[E2 The Burning Farm|E2 — The Burning Farm]]
+- [[E3 The Forest Cementery|E3 — The Forest Cemetery]]
+- [[E4 The Mountain Pass|E4 — The Mountain Pass (Climax)]]
 - [[Epilogue-What-Was-Saved|Epilogue — What Was Saved]]
 
 # 🐲 APPENDIX

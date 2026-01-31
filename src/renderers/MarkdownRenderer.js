@@ -1,22 +1,22 @@
 /**
- * @fileoverview Renderizador que convierte archivos Markdown de Obsidian a HTML.
- * Usado exclusivamente por el endpoint GET /pages/:slug.
- * 
- * Utiliza markdown-it para el parsing y renderizado.
+ * @fileoverview Renderer that converts Obsidian Markdown files to HTML.
+ * Used exclusively by the GET /pages/:slug endpoint.
+ *
+ * Uses markdown-it for parsing and rendering.
  */
 
 import MarkdownIt from 'markdown-it';
 
 /**
- * Renderizador de Markdown a HTML para páginas individuales.
- * 
+ * Markdown-to-HTML renderer for individual pages.
+ *
  * @class MarkdownRenderer
  */
 export class MarkdownRenderer {
 	/**
-	 * Crea una instancia de MarkdownRenderer.
-	 * 
-	 * @param {string|null} baseUrl - URL base para convertir URLs relativas a absolutas
+	 * Creates a MarkdownRenderer instance.
+	 *
+	 * @param {string|null} baseUrl - Base URL to convert relative URLs to absolute
 	 */
 	constructor(baseUrl = null) {
 		/** @type {string|null} */
@@ -30,93 +30,77 @@ export class MarkdownRenderer {
 		});
 		
 		/**
-		 * Mapeo de nombres de archivo a información de página para mentions
+		 * Map of file names to page info for mentions
 		 * @type {Map<string, {id: string, name: string, slug: string}>|null}
 		 */
 		this.pageMap = null;
 		
-		// Configura el renderizador para manejar wiki links de Obsidian
 		this._configureWikiLinks();
 	}
 	
 	/**
-	 * Establece la URL base para convertir URLs relativas a absolutas.
-	 * 
-	 * @param {string} baseUrl - URL base
+	 * Sets the base URL for converting relative URLs to absolute.
+	 *
+	 * @param {string} baseUrl - Base URL
 	 */
 	setBaseUrl(baseUrl) {
 		this.baseUrl = baseUrl;
 	}
 
 	/**
-	 * Establece el mapeo de páginas para convertir wiki links a mentions.
-	 * 
-	 * @param {Map<string, {id: string, name: string, slug: string}>} pageMap - Mapeo de nombres de página a información
+	 * Sets the page map for converting wiki links to mentions.
+	 *
+	 * @param {Map<string, {id: string, name: string, slug: string}>} pageMap - Map of page names to info
 	 */
 	setPageMap(pageMap) {
 		this.pageMap = pageMap;
 	}
 
 	/**
-	 * Renderiza contenido Markdown a HTML.
-	 * 
-	 * @param {string} markdown - Contenido Markdown a renderizar
-	 * @param {string|null} baseUrl - URL base para los wiki links (opcional, usa this.baseUrl si no se proporciona)
-	 * @returns {string} HTML renderizado
+	 * Renders Markdown content to HTML.
+	 *
+	 * @param {string} markdown - Markdown content to render
+	 * @param {string|null} baseUrl - Base URL for wiki links (optional, uses this.baseUrl if not provided)
+	 * @returns {string} Rendered HTML
 	 */
 	render(markdown, baseUrl = null) {
 		const urlBase = baseUrl || this.baseUrl;
 		
-		// Si tenemos pageMap, procesar wiki links DESPUÉS del renderizado para evitar que markdown-it los procese
-		// Si no tenemos pageMap, procesar antes del renderizado como fallback
 		if (this.pageMap) {
-			// Primero renderizar el markdown normalmente
 			let html = this.md.render(markdown);
-			// Luego convertir los wiki links que quedaron sin procesar a mentions
 			html = this._convertWikiLinksToMentions(html, urlBase);
 			return html;
 		} else {
-			// Fallback: procesar antes del renderizado (pero no en bloques de código)
 			const processedMarkdown = this._convertWikiLinksInMarkdown(markdown, urlBase);
 			let html = this.md.render(processedMarkdown);
-			// También procesar después del renderizado por si algunos se escaparon
 			html = this._convertWikiLinksInHTML(html, urlBase);
 			return html;
 		}
 	}
 
 	/**
-	 * Renderiza Markdown a HTML con un wrapper completo de página.
-	 * 
-	 * @param {string} markdown - Contenido Markdown
-	 * @param {string} title - Título de la página
-	 * @param {string|null} baseUrl - URL base para convertir URLs relativas (opcional, usa this.baseUrl si no se proporciona)
-	 * @returns {string} HTML completo de la página
+	 * Renders Markdown to HTML with a full page wrapper.
+	 *
+	 * @param {string} markdown - Markdown content
+	 * @param {string} title - Page title
+	 * @param {string|null} baseUrl - Base URL for relative URLs (optional, uses this.baseUrl if not provided)
+	 * @returns {string} Full page HTML
 	 */
 	renderPage(markdown, title, baseUrl = null) {
-		// Usar el baseUrl proporcionado o el de la instancia
 		const urlBase = baseUrl || this.baseUrl;
 		let content = this.render(markdown, urlBase);
 		
-		// Convertir URLs relativas a absolutas si hay una URL base
 		if (urlBase) {
 			content = this._convertRelativeUrlsToAbsolute(content, urlBase);
 		}
 		
-		// Convertir tags de Obsidian a tags de Notion
 		content = this._convertTagsToNotionTags(content);
-		
-		// Añadir clases de Notion
 		content = this._addNotionClasses(content);
-		
-		// Añadir target="_blank" a enlaces externos
 		content = this._addTargetToExternalLinks(content);
-		
-		// Procesar el título y envolver el contenido
 		content = this._wrapInNotionStructure(content, title);
 		
 		return `<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">

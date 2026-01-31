@@ -15,7 +15,7 @@
 
 > 📌 Note: what matters here is **"they remember you" vs "you pass unnoticed."**
 
-**Related encounter**: [[E1-The-Watched-Crossing|E1 — The Watched Crossing]]
+**Related encounter**: [[E1 The Watched Crossing|E1 — The Watched Crossing]]
 
 ## 🔴 E2 — The Burning Farm (combat + rescue)
 **Enemy objective:** execute a fast order (capture, burn, mark, withdraw).
@@ -31,7 +31,7 @@
 - If they're strong: add **1 minor enemy** **or** give the sub-officer **a positional advantage** (cover / height).
 - Fire and rescues already raise difficulty — **don't inflate numbers**.
 
-**Related encounter**: [[E2-The-Burning-Farm|E2 — The Burning Farm]]
+**Related encounter**: [[E2 The Burning Farm|E2 — The Burning Farm]]
 
 ## 🟠 E3 — The Forest Cemetery (revelation + tension)
 **Enemy objective:** leave a mark / proof / warning.
@@ -45,7 +45,7 @@
 > 📌 GM advice: if combat happens, make it **one threat**, and have it **withdraw at 50–60% HP**.  
 > This is a warning, not a victory.
 
-**Related encounter**: [[E3-The-Forest-Cementery|E3 — The Forest Cemetery]]
+**Related encounter**: [[E3 The Forest Cementery|E3 — The Forest Cemetery]]
 
 ## ⚫ CLIMAX — The Mountain Pass  
 (clock-based, not extermination)
@@ -64,5 +64,5 @@
 - The real danger is **terrain + the clock**.
 - If the fight turns toward a TPK: let the leader **complete the order** and **withdraw once civilians cross**.
 
-**Related encounter**: [[E4-The-Mountain-Pass|E4 — The Mountain Pass]]
+**Related encounter**: [[E4 The Mountain Pass|E4 — The Mountain Pass]]
 

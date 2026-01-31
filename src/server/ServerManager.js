@@ -1,26 +1,26 @@
 /**
- * @fileoverview Gestor del servidor HTTP local.
- * 
- * Responsabilidades:
- * - Iniciar/detener servidor HTTP en localhost
- * - Gestionar el ciclo de vida del servidor
- * - Registrar rutas
- * - No contiene lógica de dominio
+ * @fileoverview Local HTTP server manager.
+ *
+ * Responsibilities:
+ * - Start/stop HTTP server on localhost
+ * - Manage server lifecycle
+ * - Register routes
+ * - No domain logic
  */
 
 import http from 'http';
 import { URL } from 'url';
 
 /**
- * Gestor del servidor HTTP local.
- * 
+ * Local HTTP server manager.
+ *
  * @class ServerManager
  */
 export class ServerManager {
 	/**
-	 * Crea una instancia de ServerManager.
-	 * 
-	 * @param {number} port - Puerto en el que escuchar (por defecto 3000)
+	 * Creates a ServerManager instance.
+	 *
+	 * @param {number} port - Port to listen on (default 3000)
 	 */
 	constructor(port = 3000) {
 		/** @type {number} */
@@ -34,13 +34,13 @@ export class ServerManager {
 	}
 
 	/**
-	 * Inicia el servidor HTTP.
-	 * 
+	 * Starts the HTTP server.
+	 *
 	 * @returns {Promise<void>}
 	 */
 	async start() {
 		if (this.server) {
-			throw new Error('El servidor ya está en ejecución');
+			throw new Error('Server is already running');
 		}
 
 		return new Promise((resolve, reject) => {
@@ -54,7 +54,7 @@ export class ServerManager {
 
 			this.server.on('error', (err) => {
 				if (err.code === 'EADDRINUSE') {
-					reject(new Error(`El puerto ${this.port} ya está en uso`));
+					reject(new Error(`Port ${this.port} is already in use`));
 				} else {
 					reject(err);
 				}
@@ -63,8 +63,8 @@ export class ServerManager {
 	}
 
 	/**
-	 * Detiene el servidor HTTP.
-	 * 
+	 * Stops the HTTP server.
+	 *
 	 * @returns {Promise<void>}
 	 */
 	async stop() {
@@ -81,20 +81,20 @@ export class ServerManager {
 	}
 
 	/**
-	 * Verifica si el servidor está en ejecución.
-	 * 
-	 * @returns {boolean} true si está en ejecución
+	 * Returns whether the server is running.
+	 *
+	 * @returns {boolean} true if running
 	 */
 	isRunning() {
 		return this.server !== null;
 	}
 
 	/**
-	 * Registra una ruta con su handler.
-	 * 
-	 * @param {string} method - Método HTTP (GET, POST, etc.)
-	 * @param {string} path - Ruta (puede incluir parámetros como :slug)
-	 * @param {Function} handler - Función handler(req, res, params)
+	 * Registers a route with its handler.
+	 *
+	 * @param {string} method - HTTP method (GET, POST, etc.)
+	 * @param {string} path - Path (may include params like :slug)
+	 * @param {Function} handler - Handler function(req, res, params)
 	 */
 	registerRoute(method, path, handler) {
 		const key = `${method}:${path}`;
@@ -102,17 +102,16 @@ export class ServerManager {
 	}
 
 	/**
-	 * Maneja una petición HTTP entrante.
-	 * 
+	 * Handles an incoming HTTP request.
+	 *
 	 * @private
 	 * @param {http.IncomingMessage} req - Request
 	 * @param {http.ServerResponse} res - Response
 	 */
 	_handleRequest(req, res) {
-		// Configura CORS
 		this._setCORSHeaders(res, req);
 
-		// Maneja preflight OPTIONS
+		// Handle preflight OPTIONS
 		if (req.method === 'OPTIONS') {
 			res.writeHead(200);
 			res.end();
@@ -123,28 +122,28 @@ export class ServerManager {
 		const method = req.method;
 		const pathname = url.pathname;
 
-		// Busca la ruta que coincida
+		// Find matching route
 		const handler = this._findRoute(method, pathname);
 		
 		if (handler) {
 			const params = this._extractParams(method, pathname, handler.route);
 			handler.fn(req, res, params);
 		} else {
-			this._sendError(res, 404, 'Ruta no encontrada');
+			this._sendError(res, 404, 'Route not found');
 		}
 	}
 
 	/**
-	 * Encuentra la ruta que coincide con el path.
-	 * 
+	 * Finds the route that matches the path.
+	 *
 	 * @private
-	 * @param {string} method - Método HTTP
-	 * @param {string} pathname - Path de la URL
-	 * @returns {Object|null} Handler encontrado o null
+	 * @param {string} method - HTTP method
+	 * @param {string} pathname - URL path
+	 * @returns {Object|null} Handler found or null
 	 */
 	_findRoute(method, pathname) {
 		for (const [key, fn] of this.routes.entries()) {
-			// Solo divide en el primer ':' para no romper parámetros como :slug
+			// Split only on first ':' to avoid breaking params like :slug
 			const colonIndex = key.indexOf(':');
 			const routeMethod = key.substring(0, colonIndex);
 			const routePath = key.substring(colonIndex + 1);
@@ -153,7 +152,7 @@ export class ServerManager {
 				continue;
 			}
 
-			// Convierte la ruta a regex
+			// Convert route to regex
 			const regex = this._routeToRegex(routePath);
 			const match = pathname.match(regex);
 			
@@ -166,14 +165,14 @@ export class ServerManager {
 	}
 
 	/**
-	 * Convierte una ruta con parámetros a regex.
-	 * 
+	 * Converts a route with params to regex.
+	 *
 	 * @private
-	 * @param {string} route - Ruta con parámetros (ej: "/pages/:slug")
-	 * @returns {RegExp} Regex para matching
+	 * @param {string} route - Route with params (e.g. "/pages/:slug")
+	 * @returns {RegExp} Regex for matching
 	 */
 	_routeToRegex(route) {
-		// Si la ruta termina con /*, captura todo después
+		// If route ends with /*, capture everything after
 		if (route.endsWith('/*')) {
 			const basePattern = route.slice(0, -2).replace(/\//g, '\\/');
 			return new RegExp(`^${basePattern}/.*$`);
@@ -186,25 +185,25 @@ export class ServerManager {
 	}
 
 	/**
-	 * Extrae parámetros de la URL según la ruta.
-	 * 
+	 * Extracts params from the URL according to the route.
+	 *
 	 * @private
-	 * @param {string} method - Método HTTP
-	 * @param {string} pathname - Path de la URL
-	 * @param {string} route - Ruta con parámetros
-	 * @returns {Object} Objeto con parámetros extraídos
+	 * @param {string} method - HTTP method
+	 * @param {string} pathname - URL path
+	 * @param {string} route - Route with params
+	 * @returns {Object} Object with extracted params
 	 */
 	_extractParams(method, pathname, route) {
 		const params = {};
 		const paramNames = [];
 		
-		// Extrae nombres de parámetros de la ruta
+		// Extract param names from route
 		const paramMatches = route.matchAll(/:(\w+)/g);
 		for (const match of paramMatches) {
 			paramNames.push(match[1]);
 		}
 		
-		// Extrae valores de la URL
+		// Extract values from URL
 		const regex = this._routeToRegex(route);
 		const match = pathname.match(regex);
 		
@@ -218,11 +217,11 @@ export class ServerManager {
 	}
 
 	/**
-	 * Configura headers CORS.
-	 * 
+	 * Sets CORS headers.
+	 *
 	 * @private
 	 * @param {http.ServerResponse} res - Response
-	 * @param {http.IncomingMessage} req - Request (opcional, para detectar private network)
+	 * @param {http.IncomingMessage} req - Request (optional, for private network detection)
 	 */
 	_setCORSHeaders(res, req = null) {
 		res.setHeader('Access-Control-Allow-Origin', '*');
@@ -230,22 +229,20 @@ export class ServerManager {
 		res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Request-Private-Network');
 		res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight 24h
 		
-		// Private Network Access (Chrome/navegadores modernos)
-		// Permite peticiones HTTPS → localhost
-		// Siempre incluir este header para permitir acceso desde redes públicas
+		// Private Network Access (Chrome/modern browsers)
 		res.setHeader('Access-Control-Allow-Private-Network', 'true');
 		
-		// NOTA: En producción, restringe el origen:
+		// NOTE: In production, restrict origin:
 		// res.setHeader('Access-Control-Allow-Origin', 'https://owlbear.rodeo');
 	}
 
 	/**
-	 * Envía una respuesta de error.
-	 * 
+	 * Sends an error response.
+	 *
 	 * @private
 	 * @param {http.ServerResponse} res - Response
-	 * @param {number} statusCode - Código de estado HTTP
-	 * @param {string} message - Mensaje de error
+	 * @param {number} statusCode - HTTP status code
+	 * @param {string} message - Error message
 	 */
 	_sendError(res, statusCode, message) {
 		res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -253,11 +250,11 @@ export class ServerManager {
 	}
 
 	/**
-	 * Envía una respuesta JSON.
-	 * 
+	 * Sends a JSON response.
+	 *
 	 * @param {http.ServerResponse} res - Response
-	 * @param {Object} data - Datos a enviar
-	 * @param {number} statusCode - Código de estado (por defecto 200)
+	 * @param {Object} data - Data to send
+	 * @param {number} statusCode - Status code (default 200)
 	 */
 	sendJSON(res, data, statusCode = 200) {
 		res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -265,11 +262,11 @@ export class ServerManager {
 	}
 
 	/**
-	 * Envía una respuesta HTML.
-	 * 
+	 * Sends an HTML response.
+	 *
 	 * @param {http.ServerResponse} res - Response
-	 * @param {string} html - HTML a enviar
-	 * @param {number} statusCode - Código de estado (por defecto 200)
+	 * @param {string} html - HTML to send
+	 * @param {number} statusCode - Status code (default 200)
 	 */
 	sendHTML(res, html, statusCode = 200) {
 		res.writeHead(statusCode, { 'Content-Type': 'text/html; charset=utf-8' });

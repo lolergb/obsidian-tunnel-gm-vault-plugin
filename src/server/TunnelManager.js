@@ -1,10 +1,10 @@
 /**
- * @fileoverview Gestor de túnel público HTTPS para localhost.
- * 
- * Responsabilidades:
- * - Crear túnel HTTPS usando cloudflared
- * - Gestionar el ciclo de vida del túnel
- * - Proporcionar URL pública
+ * @fileoverview Public HTTPS tunnel manager for localhost.
+ *
+ * Responsibilities:
+ * - Create HTTPS tunnel using cloudflared
+ * - Manage tunnel lifecycle
+ * - Provide public URL
  */
 
 import { spawn } from 'child_process';
@@ -12,15 +12,15 @@ import { platform } from 'os';
 import { execSync } from 'child_process';
 
 /**
- * Gestor del túnel HTTPS público.
- * 
+ * Public HTTPS tunnel manager.
+ *
  * @class TunnelManager
  */
 export class TunnelManager {
 	/**
-	 * Crea una instancia de TunnelManager.
-	 * 
-	 * @param {number} port - Puerto local a exponer
+	 * Creates a TunnelManager instance.
+	 *
+	 * @param {number} port - Local port to expose
 	 */
 	constructor(port) {
 		/** @type {number} */
@@ -34,41 +34,35 @@ export class TunnelManager {
 	}
 
 	/**
-	 * Inicia el túnel HTTPS usando cloudflared.
-	 * 
-	 * @returns {Promise<string>} URL pública del túnel
+	 * Starts the HTTPS tunnel using cloudflared.
+	 *
+	 * @returns {Promise<string>} Tunnel public URL
 	 */
 	async start() {
 		if (this.tunnel) {
-			throw new Error('El túnel ya está activo');
+			throw new Error('Tunnel is already active');
 		}
 
 		return new Promise((resolve, reject) => {
-			// Determinar el comando según el sistema operativo
 			const os = platform();
 			let command;
 			
-			// Rutas comunes donde puede estar cloudflared
 			const commonPaths = [];
 			
 			if (os === 'darwin') {
-				// macOS: rutas comunes de Homebrew
 				commonPaths.push('/opt/homebrew/bin/cloudflared');
 				commonPaths.push('/usr/local/bin/cloudflared');
 			} else if (os === 'linux') {
-				// Linux: rutas comunes
 				commonPaths.push('/usr/local/bin/cloudflared');
 				commonPaths.push('/usr/bin/cloudflared');
 			} else if (os === 'win32') {
-				// Windows: rutas comunes
 				commonPaths.push('C:\\Program Files\\Cloudflare\\cloudflared.exe');
 				commonPaths.push('C:\\Program Files (x86)\\Cloudflare\\cloudflared.exe');
 			}
 			
-			// Intentar encontrar cloudflared
 			let found = false;
 			
-			// Primero intentar con 'which' o 'where' (si está en PATH)
+			// Try 'which' or 'where' first (if in PATH)
 			try {
 				if (os === 'win32') {
 					const whichResult = execSync('where cloudflared.exe', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
@@ -84,30 +78,27 @@ export class TunnelManager {
 					}
 				}
 			} catch (e) {
-				// 'which' falló, continuar con rutas comunes
+				// 'which' failed, try common paths
 			}
 			
-			// Si no se encontró, buscar en rutas comunes
 			if (!found) {
 				for (const path of commonPaths) {
 					try {
-						// Verificar si el archivo existe ejecutando --version
 						execSync(`"${path}" --version`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 						command = path;
 						found = true;
 						break;
 					} catch (e) {
-						// Esta ruta no funciona, continuar
+						// This path doesn't work, continue
 					}
 				}
 			}
 			
-			// Si aún no se encontró, usar el nombre del comando (último recurso)
 			if (!found) {
 				command = os === 'win32' ? 'cloudflared.exe' : 'cloudflared';
 			}
 
-			// Ejecutar cloudflared tunnel
+			// Run cloudflared tunnel
 			this.tunnel = spawn(command, [
 				'tunnel',
 				'--url',
@@ -121,14 +112,13 @@ export class TunnelManager {
 			let errorOutput = '';
 			let urlResolved = false;
 
-			// Timeout de 30 segundos para obtener la URL
+			// 30 second timeout to get the URL
 			let timeoutId;
 			
-			// Función para buscar y resolver la URL
 			const tryResolveUrl = (text) => {
 				if (urlResolved) return;
 				
-				// Buscar la URL en el texto (cloudflared puede mostrar en diferentes formatos)
+				// Look for URL in text (cloudflared may show in different formats)
 				// Formatos posibles:
 				// - https://random-name.trycloudflare.com
 				// - +--------------------------------------------------------------------------------------------+
@@ -146,43 +136,37 @@ export class TunnelManager {
 				}
 			};
 
-			// Capturar stdout para obtener la URL
 			this.tunnel.stdout.on('data', (data) => {
 				const text = data.toString();
 				output += text;
 				tryResolveUrl(text);
 			});
 
-			// Capturar stderr (cloudflared a veces escribe la URL aquí)
 			this.tunnel.stderr.on('data', (data) => {
 				const text = data.toString();
 				errorOutput += text;
 				tryResolveUrl(text);
 			});
 
-			// Manejar errores del proceso
 			this.tunnel.on('error', (err) => {
 				if (err.code === 'ENOENT') {
-					reject(new Error('cloudflared no está instalado o no está en el PATH. Por favor, instálalo desde https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/ y asegúrate de que esté en tu PATH.'));
+					reject(new Error('cloudflared is not installed or not in PATH. Install from https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/ and ensure it is in your PATH.'));
 				} else {
-					reject(new Error(`Error al iniciar cloudflared: ${err.message}`));
+					reject(new Error(`Error starting cloudflared: ${err.message}`));
 				}
 			});
 
-			// Manejar cierre del proceso
 			this.tunnel.on('close', (code) => {
-				// Si ya resolvimos la URL, el cierre es normal (el proceso sigue corriendo en background)
 				if (urlResolved) {
 					return;
 				}
 				
-				// Si no resolvimos la URL y el proceso se cerró, es un error
 				if (code !== 0 && code !== null && !urlResolved) {
 					const fullOutput = output + errorOutput;
-					let errorMsg = `cloudflared se cerró con código ${code}`;
+					let errorMsg = `cloudflared exited with code ${code}`;
 					
 					if (errorOutput.includes('command not found') || errorOutput.includes('not found')) {
-						errorMsg = 'cloudflared no está instalado o no está en el PATH. Por favor, instálalo desde https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/';
+						errorMsg = 'cloudflared is not installed or not in PATH. Install from https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/';
 					} else if (fullOutput) {
 						errorMsg += `\nOutput: ${fullOutput.substring(0, 500)}`;
 					}
@@ -191,27 +175,25 @@ export class TunnelManager {
 					this.tunnel = null;
 					this.publicUrl = null;
 					
-					// Solo rechazar si aún no resolvimos la URL
 					if (!urlResolved) {
 						reject(new Error(errorMsg));
 					}
 				}
 			});
 
-			// Timeout de 30 segundos para obtener la URL
 			timeoutId = setTimeout(() => {
 				if (!urlResolved) {
 					this.tunnel?.kill();
 					this.tunnel = null;
-					reject(new Error('Timeout esperando URL de cloudflared. Verifica que cloudflared esté instalado y funcionando. Output: ' + (output + errorOutput).substring(0, 500)));
+					reject(new Error('Timeout waiting for cloudflared URL. Verify cloudflared is installed and working. Output: ' + (output + errorOutput).substring(0, 500)));
 				}
 			}, 30000);
 		});
 	}
 
 	/**
-	 * Detiene el túnel HTTPS.
-	 * 
+	 * Stops the HTTPS tunnel.
+	 *
 	 * @returns {Promise<void>}
 	 */
 	async stop() {
@@ -224,23 +206,23 @@ export class TunnelManager {
 			this.tunnel = null;
 			this.publicUrl = null;
 		} catch (error) {
-			console.error('Error al cerrar túnel:', error);
+			console.error('Error closing tunnel:', error);
 		}
 	}
 
 	/**
-	 * Verifica si el túnel está activo.
-	 * 
-	 * @returns {boolean} true si está activo
+	 * Returns whether the tunnel is active.
+	 *
+	 * @returns {boolean} true if active
 	 */
 	isActive() {
 		return this.tunnel !== null;
 	}
 
 	/**
-	 * Obtiene la URL pública del túnel.
-	 * 
-	 * @returns {string|null} URL pública o null si no está activo
+	 * Gets the tunnel public URL.
+	 *
+	 * @returns {string|null} Public URL or null if not active
 	 */
 	getPublicUrl() {
 		return this.publicUrl;
