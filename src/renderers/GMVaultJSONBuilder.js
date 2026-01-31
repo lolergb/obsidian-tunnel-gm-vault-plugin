@@ -64,14 +64,14 @@ export class GMVaultJSONBuilder {
 	_buildCategoryJSON(category) {
 		const items = [];
 
-		// Add pages as 'page' items
-		for (const page of category.pages) {
-			items.push(this._buildPageItemJSON(page));
-		}
-
-		// Add subcategories as 'category' items
+		// Add subcategories first (folders before files, like Obsidian)
 		for (const subCategory of category.categories) {
 			items.push(this._buildCategoryItemJSON(subCategory));
+		}
+
+		// Then add pages
+		for (const page of category.pages) {
+			items.push(this._buildPageItemJSON(page));
 		}
 
 		const json = {
@@ -122,14 +122,14 @@ export class GMVaultJSONBuilder {
 	_buildCategoryItemJSON(category) {
 		const items = [];
 
-		// Añadir páginas como items de tipo 'page'
-		for (const page of category.pages) {
-			items.push(this._buildPageItemJSON(page));
-		}
-
-		// Add subcategories recursively
+		// Add subcategories first (folders before files, like Obsidian)
 		for (const subCategory of category.categories) {
 			items.push(this._buildCategoryItemJSON(subCategory));
+		}
+
+		// Then add pages
+		for (const page of category.pages) {
+			items.push(this._buildPageItemJSON(page));
 		}
 
 		const item = {
