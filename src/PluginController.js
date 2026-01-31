@@ -8,7 +8,7 @@
  * - Does NOT contain business logic
  */
 
-import { Notice, SuggestModal, TFile, TFolder } from 'obsidian';
+import { Notice, PluginSettingTab, Setting, SuggestModal, TFile, TFolder } from 'obsidian';
 import { slugify } from './utils/slugify.js';
 import { ServerManager } from './server/ServerManager.js';
 import { TunnelManager } from './server/TunnelManager.js';
@@ -62,6 +62,12 @@ export class PluginController {
 		
 		/** @type {string|null} */
 		this.publicUrl = null;
+		
+		/** @type {boolean} Use only plugin's cloudflared (ignore system); forces download if missing */
+		this.useBundledCloudflared = false;
+		
+		/** @type {HTMLElement|null} Status bar item durante descarga de cloudflared (una sola línea que se actualiza) */
+		this.tunnelProgressEl = null;
 	}
 
 	/**
@@ -73,9 +79,20 @@ export class PluginController {
 		// Get plugin directory for storing cloudflared binary
 		const pluginDir = this._getPluginDir();
 		
-		// Progress callback for tunnel operations
+		// Progress callback: durante descarga actualiza una sola línea en la barra de estado; el resto son Notice
 		const onTunnelProgress = (message) => {
-			new Notice(message, 3000);
+			if (message.startsWith('Downloading cloudflared...')) {
+				if (!this.tunnelProgressEl) {
+					this.tunnelProgressEl = this.plugin.addStatusBarItem();
+				}
+				this.tunnelProgressEl.setText(message);
+			} else {
+				if (this.tunnelProgressEl) {
+					this.tunnelProgressEl.remove();
+					this.tunnelProgressEl = null;
+				}
+				new Notice(message, 3000);
+			}
 		};
 		
 		// Initialize modules
@@ -89,8 +106,18 @@ export class PluginController {
 		// Register Obsidian commands
 		this._registerCommands();
 		
+		// Settings tab
+		this.plugin.addSettingTab(new GMVaultSettingTab(this.app, this.plugin, this));
+		
 		// Load saved settings
 		await this._loadSettings();
+	}
+
+	/**
+	 * Saves settings to disk (public for use by settings tab).
+	 */
+	async saveSettings() {
+		await this._saveSettings();
 	}
 
 	/**
@@ -203,7 +230,9 @@ export class PluginController {
 			
 			// Inicia el túnel HTTPS público
 			new Notice('⏳ Creating public HTTPS tunnel...');
-			const publicUrl = await this.tunnelManager.start();
+			const publicUrl = await this.tunnelManager.start({
+				useBundledOnly: this.useBundledCloudflared
+			});
 			this.publicUrl = publicUrl;
 			
 			// Actualiza la URL base del JSON builder para usar la URL pública
@@ -844,6 +873,7 @@ export class PluginController {
 		if (data) {
 			this.port = data.port || 3000;
 			this.publicUrl = data.publicUrl || null;
+			this.useBundledCloudflared = data.useBundledCloudflared === true;
 			
 			if (data.sessionFolderPath) {
 				const folder = this.app.vault.getAbstractFileByPath(data.sessionFolderPath);
@@ -870,8 +900,36 @@ export class PluginController {
 			port: this.port,
 			sessionFolderPath: this.currentSessionFolder?.path || null,
 			serverEnabled: this.serverManager?.isRunning() || false,
-			publicUrl: this.tunnelManager?.getPublicUrl() || this.publicUrl || null
+			publicUrl: this.tunnelManager?.getPublicUrl() || this.publicUrl || null,
+			useBundledCloudflared: this.useBundledCloudflared
 		});
+	}
+}
+
+/**
+ * Settings tab for GM Vault Exporter (Tunnel).
+ */
+class GMVaultSettingTab extends PluginSettingTab {
+	constructor(app, plugin, controller) {
+		super(app, plugin);
+		this.controller = controller;
+	}
+
+	display() {
+		const { containerEl } = this;
+		containerEl.empty();
+
+		new Setting(containerEl)
+			.setName('Use bundled cloudflared only')
+			.setDesc('Ignore system cloudflared and use only the plugin\'s copy (downloads automatically if missing). Useful to test the auto-download or to avoid conflicts with the system installation.')
+			.addToggle((toggle) => {
+				toggle
+					.setValue(this.controller.useBundledCloudflared)
+					.onChange(async (value) => {
+						this.controller.useBundledCloudflared = value;
+						await this.controller.saveSettings();
+					});
+			});
 	}
 }
 

@@ -154,6 +154,7 @@ export class TunnelManager {
 				
 				const totalSize = parseInt(response.headers['content-length'] || '0', 10);
 				let downloadedSize = 0;
+				let lastReportedPercent = -1;
 				
 				const file = createWriteStream(destPath);
 				
@@ -161,7 +162,11 @@ export class TunnelManager {
 					downloadedSize += chunk.length;
 					if (totalSize > 0) {
 						const percent = Math.round((downloadedSize / totalSize) * 100);
-						this._reportProgress(`Downloading cloudflared... ${percent}%`);
+						// Solo cuando cambia el porcentaje (se actualiza la misma línea en la barra de estado)
+						if (percent !== lastReportedPercent) {
+							lastReportedPercent = percent;
+							this._reportProgress(`Downloading cloudflared... ${percent}%`);
+						}
 					}
 				});
 				
@@ -273,9 +278,10 @@ export class TunnelManager {
 	 * Finds cloudflared binary - checks system paths and local binary.
 	 * Downloads if not found and pluginDir is set.
 	 * @private
+	 * @param {boolean} useBundledOnly - If true, skip system paths (only use/download plugin bin)
 	 * @returns {Promise<string>} Path to cloudflared binary
 	 */
-	async _ensureCloudflared() {
+	async _ensureCloudflared(useBundledOnly = false) {
 		const os = platform();
 		
 		// 1. Check if local binary exists (plugin directory)
@@ -293,7 +299,16 @@ export class TunnelManager {
 			}
 		}
 		
-		// 2. Check system paths
+		// 2. Check system paths (skip if useBundledOnly)
+		if (useBundledOnly) {
+			if (this.pluginDir) {
+				return await this._downloadCloudflared();
+			}
+			throw new Error(
+				'Bundled cloudflared only is enabled but plugin directory is not available. Disable the option in Settings or use system cloudflared.'
+			);
+		}
+		
 		const systemPaths = [];
 		
 		if (os === 'darwin') {
@@ -363,15 +378,17 @@ export class TunnelManager {
 	/**
 	 * Starts the HTTPS tunnel using cloudflared.
 	 *
+	 * @param {{ useBundledOnly?: boolean }} [options] - useBundledOnly: ignore system cloudflared, use/download only plugin bin
 	 * @returns {Promise<string>} Tunnel public URL
 	 */
-	async start() {
+	async start(options = {}) {
 		if (this.tunnel) {
 			throw new Error('Tunnel is already active');
 		}
 
+		const useBundledOnly = options.useBundledOnly === true;
 		// Find or download cloudflared
-		const command = await this._ensureCloudflared();
+		const command = await this._ensureCloudflared(useBundledOnly);
 		this._reportProgress('Starting tunnel...');
 
 		return new Promise((resolve, reject) => {
