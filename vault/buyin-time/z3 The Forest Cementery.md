@@ -96,5 +96,5 @@ This encounter establishes:
 > Someone merely confirmed it could begin.
 
 ## 🐲 Enemies
-See [[Appendix-Enemies#E3 — The Forest Cemetery|Appendix — E3 Enemies]] for enemy options.
+See [[buyin-time/Appendix/Appendix-Enemies#E3 — The Forest Cemetery|Appendix — E3 Enemies]] for enemy options.
 

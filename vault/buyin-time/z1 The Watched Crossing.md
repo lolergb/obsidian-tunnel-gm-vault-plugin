@@ -54,5 +54,5 @@ This encounter establishes:
 > as if remembering it won't help.
 
 ## 🐲 Enemies
-See [[Appendix-Enemies#E1 — The Watched Crossing|Appendix — E1 Enemies]] for enemy options.
+See [[buyin-time/Appendix/Appendix-Enemies#E1 — The Watched Crossing|Appendix — E1 Enemies]] for enemy options.
 

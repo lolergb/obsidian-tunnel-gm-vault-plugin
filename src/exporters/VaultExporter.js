@@ -190,47 +190,53 @@ export class VaultExporter {
 		const items = [];
 		const children = folder.children || [];
 		
-		// Filter to only include folders and markdown files
-		const validChildren = children.filter(child => 
-			child instanceof TFolder || (child instanceof TFile && child.extension === 'md')
-		);
+		// Separate files and folders
+		const files = [];
+		const folders = [];
 		
-		// Sort files and folders together according to Obsidian's setting
-		const sortedItems = this._sortByObsidianConfig(validChildren);
-		
-		// Process items in sorted order (mixed files and folders)
-		for (const item of sortedItems) {
-			if (item instanceof TFolder) {
-				// It's a folder
-				const subFolder = item;
-				const imageFiles = await this._getImageFiles(subFolder);
-				const hasOnlyImages = imageFiles.length > 0 && 
-					subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
-					subFolder.children.filter(c => c.children !== undefined).length === 0;
-				
-				if (hasOnlyImages) {
-					// Image gallery page
-					const galleryItem = await this._exportImageGallery(subFolder, imageFiles);
-					items.push(galleryItem);
-				} else {
-					// Normal folder: create subcategory
-					const subCategory = await this._exportFolder(subFolder, null);
-					items.push({
-						type: 'category',
-						...subCategory
-					});
-				}
-			} else {
-				// It's a file
-				const file = item;
-				// Exclude session file
-				if (sessionFile && file.path === sessionFile.path) {
-					continue;
-				}
-				
-				const pageItem = await this._exportPage(file, folder);
-				items.push(pageItem);
+		for (const child of children) {
+			if (child instanceof TFolder) {
+				folders.push(child);
+			} else if (child instanceof TFile && child.extension === 'md') {
+				files.push(child);
 			}
+		}
+		
+		// Sort each group according to Obsidian's setting
+		const sortedFolders = this._sortByObsidianConfig(folders);
+		const sortedFiles = this._sortByObsidianConfig(files);
+		
+		// Obsidian shows folders first, then files
+		// Process folders first
+		for (const subFolder of sortedFolders) {
+			const imageFiles = await this._getImageFiles(subFolder);
+			const hasOnlyImages = imageFiles.length > 0 && 
+				subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
+				subFolder.children.filter(c => c.children !== undefined).length === 0;
+			
+			if (hasOnlyImages) {
+				// Image gallery page
+				const galleryItem = await this._exportImageGallery(subFolder, imageFiles);
+				items.push(galleryItem);
+			} else {
+				// Normal folder: create subcategory
+				const subCategory = await this._exportFolder(subFolder, null);
+				items.push({
+					type: 'category',
+					...subCategory
+				});
+			}
+		}
+		
+		// Then process files
+		for (const file of sortedFiles) {
+			// Exclude session file
+			if (sessionFile && file.path === sessionFile.path) {
+				continue;
+			}
+			
+			const pageItem = await this._exportPage(file, folder);
+			items.push(pageItem);
 		}
 		
 		return {

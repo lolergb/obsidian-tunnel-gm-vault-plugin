@@ -198,47 +198,53 @@ export class SessionParser {
 	async _scanFolder(folder, category, sessionFile) {
 		const children = folder.children || [];
 		
-		// Filter to only include folders and markdown files
-		const items = children.filter(child => 
-			child.children !== undefined || child.extension === 'md'
-		);
+		// Separate files and folders
+		const files = [];
+		const folders = [];
 		
-		// Sort files and folders together according to Obsidian's setting
-		const sortedItems = this._sortByObsidianConfig(items);
-		
-		// Process items in sorted order (mixed files and folders)
-		for (const item of sortedItems) {
-			if (item.children !== undefined) {
-				// It's a folder
-				const subFolder = item;
-				const imageFiles = await this._getImageFiles(subFolder);
-				const hasOnlyImages = imageFiles.length > 0 && 
-					subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
-					subFolder.children.filter(c => c.children !== undefined).length === 0;
-				
-				if (hasOnlyImages) {
-					const folderSlug = slugify(subFolder.name);
-					const page = new Page(subFolder.name, folderSlug, ['image']);
-					category.addPage(page);
-				} else {
-					const subCategory = new Category(subFolder.name);
-					category.addCategory(subCategory);
-					
-					await this._scanFolder(subFolder, subCategory, sessionFile);
-				}
-			} else {
-				// It's a file
-				const file = item;
-				if (sessionFile && file.path === sessionFile.path) {
-					continue;
-				}
-				
-				const pageName = await this._getPageName(file);
-				const slug = slugify(file.basename);
-				
-				const page = new Page(pageName, slug, []);
-				category.addPage(page);
+		for (const child of children) {
+			if (child.children !== undefined) {
+				folders.push(child);
+			} else if (child.extension === 'md') {
+				files.push(child);
 			}
+		}
+		
+		// Sort each group according to Obsidian's setting
+		const sortedFolders = this._sortByObsidianConfig(folders);
+		const sortedFiles = this._sortByObsidianConfig(files);
+		
+		// Obsidian shows folders first, then files
+		// Process folders first
+		for (const subFolder of sortedFolders) {
+			const imageFiles = await this._getImageFiles(subFolder);
+			const hasOnlyImages = imageFiles.length > 0 && 
+				subFolder.children.filter(c => c instanceof TFile && c.extension === 'md').length === 0 &&
+				subFolder.children.filter(c => c.children !== undefined).length === 0;
+			
+			if (hasOnlyImages) {
+				const folderSlug = slugify(subFolder.name);
+				const page = new Page(subFolder.name, folderSlug, ['image']);
+				category.addPage(page);
+			} else {
+				const subCategory = new Category(subFolder.name);
+				category.addCategory(subCategory);
+				
+				await this._scanFolder(subFolder, subCategory, sessionFile);
+			}
+		}
+		
+		// Then process files
+		for (const file of sortedFiles) {
+			if (sessionFile && file.path === sessionFile.path) {
+				continue;
+			}
+			
+			const pageName = await this._getPageName(file);
+			const slug = slugify(file.basename);
+			
+			const page = new Page(pageName, slug, []);
+			category.addPage(page);
 		}
 	}
 	

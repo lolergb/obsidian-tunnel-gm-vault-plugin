@@ -38,5 +38,5 @@ The fight ends when the **clock fills**, not when enemies fall.
 > "But you will not step aside."
 
 ## 🐲 Enemies
-See [[Appendix-Enemies#CLIMAX — The Mountain Pass|Appendix — Climax Enemies]] for enemy composition.
+See [[buyin-time/Appendix/Appendix-Enemies#CLIMAX — The Mountain Pass|Appendix — Climax Enemies]] for enemy composition.
 

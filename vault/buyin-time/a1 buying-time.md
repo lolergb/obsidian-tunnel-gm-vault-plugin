@@ -88,4 +88,4 @@ But someone lives to remember.
 
 # 🐲 APPENDIX
 
-- [[Appendix-Enemies|Appendix VI — Enemies]]
+- [[buyin-time/Appendix/Appendix-Enemies|Appendix VI — Enemies]]

@@ -123,5 +123,5 @@ This encounter establishes:
 - Someone mentions **strange symbols in the forest**.
 
 ## 🐲 Enemies
-See [[Appendix-Enemies#E2 — The Burning Farm|Appendix — E2 Enemies]] for enemy packages.
+See [[buyin-time/Appendix/Appendix-Enemies#E2 — The Burning Farm|Appendix — E2 Enemies]] for enemy packages.
 
