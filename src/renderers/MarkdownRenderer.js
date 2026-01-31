@@ -229,7 +229,7 @@ export class MarkdownRenderer {
 			font-weight: var(--font-weight-normal);
 			font-size: var(--font-size-base);
 			color: var(--color-text-secondary);
-			padding: var(--spacing-lg);
+			padding: 0;
 			min-height: 100dvh;
 			height: 100dvh;
 			width: 100%;
