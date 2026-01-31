@@ -159,7 +159,9 @@ export class SessionParser {
 			}
 		}
 		
-		// Keep original vault order (no sorting)
+		// Reverse to match Obsidian UI order
+		files.reverse();
+		folders.reverse();
 		
 		// Add files as pages (except session file if it exists)
 		for (const file of files) {
@@ -214,7 +216,7 @@ export class SessionParser {
 			}
 		}
 		
-		return imageFiles; // Keep original vault order
+		return imageFiles.reverse(); // Reverse to match Obsidian UI order
 	}
 
 	/**

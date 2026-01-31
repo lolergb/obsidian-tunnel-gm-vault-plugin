@@ -701,7 +701,7 @@ export class PluginController {
 			}
 		}
 		
-		return imageFiles; // Keep original vault order
+		return imageFiles.reverse(); // Reverse to match Obsidian UI order
 	}
 
 	/**
@@ -733,7 +733,7 @@ export class PluginController {
 			}
 		}
 		
-		return images; // Keep original vault order
+		return images.reverse(); // Reverse to match Obsidian UI order
 	}
 
 	/**

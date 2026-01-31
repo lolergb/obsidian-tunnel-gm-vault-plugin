@@ -152,7 +152,9 @@ export class VaultExporter {
 			}
 		}
 		
-		// Keep original vault order (no sorting)
+		// Reverse to match Obsidian UI order
+		files.reverse();
+		folders.reverse();
 		
 		// Export files as pages
 		for (const file of files) {
@@ -717,7 +719,7 @@ export class VaultExporter {
 			}
 		}
 		
-		return imageFiles; // Keep original vault order
+		return imageFiles.reverse(); // Reverse to match Obsidian UI order
 	}
 
 	/**
